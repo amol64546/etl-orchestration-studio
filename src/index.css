@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+.react-flow__node-custom {
+  @apply bg-white border-2 border-blue-400 rounded-lg shadow-md px-3 py-2 text-sm font-medium;
+}
+
+.react-flow__node-source {
+  @apply border-green-500 bg-green-50;
+}
+
+.react-flow__node-sink {
+  @apply border-red-500 bg-red-50;
+}
+
+.react-flow__node-transform {
+  @apply border-amber-500 bg-amber-50;
+}

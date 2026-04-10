@@ -1,0 +1,175 @@
+.brick-panel-container {
+  position: relative;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 70vh;
+  width: 100%;
+  z-index: 1;
+}
+
+.brick-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px 12px 32px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  z-index: 2;
+}
+
+.brick-panel-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1976d2;
+}
+
+.brick-panel-plus {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: background 0.2s;
+}
+
+.brick-panel-plus:hover {
+  background: #1565c0;
+}
+
+.brick-panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 32px 32px 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  background: #fff;
+}
+
+.brick-thumbnail {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  width: 220px;
+  height: 120px;
+  padding: 20px 16px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  cursor: pointer;
+  position: relative;
+  transition: box-shadow 0.2s;
+}
+
+.brick-thumbnail:hover {
+  box-shadow: 0 4px 16px rgba(25,118,210,0.12);
+}
+
+.brick-delete-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #e53935;
+  background: #fff;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  cursor: pointer;
+  z-index: 2;
+  border: none;
+  outline: none;
+  transition: background 0.2s;
+}
+
+.brick-delete-icon:hover {
+  background: #ffeaea;
+}
+
+.brick-panel-modal {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.18);
+  display: flex;
+  align-items: flex-start;
+  z-index: 1000;
+}
+
+.brick-panel-modal-content {
+  background: #fff;
+  margin: 60px auto 0 auto;
+  padding: 32px 32px 24px 32px;
+  border-radius: 12px;
+  min-width: 420px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  position: relative;
+}
+
+.brick-panel-close {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #888;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 8px;
+  margin: 0;
+  z-index: 10;
+}
+
+.brick-panel-confirm-content {
+  background: #fff;
+  padding: 32px 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  text-align: center;
+}
+
+.brick-panel-confirm-buttons {
+  margin-top: 24px;
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+}
+
+.brick-panel-confirm-btn {
+  padding: 8px 24px;
+  border-radius: 6px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: #1976d2;
+  color: #fff;
+  transition: background 0.2s;
+}
+
+.brick-panel-confirm-btn.cancel {
+  background: #eee;
+  color: #333;
+}
+
+.brick-panel-confirm-btn:hover:not(.cancel) {
+  background: #1565c0;
+}
