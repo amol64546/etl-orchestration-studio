@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { createBrick, updateBrick, deleteBrick } from '../api/client';
 import { SOURCE_PLUGINS, TRANSFORM_PLUGINS, SINK_PLUGINS } from '../constants/plugins';
@@ -41,7 +40,7 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
   const [configFields, setConfigFields] = useState([]);
   const [message, setMessage] = useState('');
 
-  // Update config fields when plugin type or name changes
+  // Update config fields when plugin type or name changes, and include extra fields from config
   useEffect(() => {
     if (!formData.pluginType || !formData.pluginName) {
       setConfigFields([]);
@@ -49,7 +48,8 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
     }
     const typeKey = formData.pluginType.toLowerCase();
     const template = PLUGIN_TEMPLATES[typeKey]?.[formData.pluginName] || {};
-    const fields = Object.entries(template).map(([key, value]) => ({
+    // Start with template fields
+    let fields = Object.entries(template).map(([key, value]) => ({
       key,
       valueType: typeof value === 'boolean' ? 'boolean' :
         Array.isArray(value) ? 'array' :
@@ -57,6 +57,19 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
         typeof value === 'number' ? 'number' : 'string',
       value: formData.config[key] !== undefined ? formData.config[key] : value
     }));
+    // Add extra fields from config that are not in the template and not plugin_name
+    Object.entries(formData.config).forEach(([key, value]) => {
+      if (!(key in template) && key !== 'plugin_name') {
+        fields.push({
+          key,
+          valueType: typeof value === 'boolean' ? 'boolean' :
+            Array.isArray(value) ? 'array' :
+            typeof value === 'object' ? 'object' :
+            typeof value === 'number' ? 'number' : 'string',
+          value
+        });
+      }
+    });
     setConfigFields(fields);
   }, [formData.pluginType, formData.pluginName, formData.config]);
 
@@ -192,24 +205,120 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
             <label className="block text-sm font-medium mb-1">Config Fields</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {configFields.map((field, idx) => (
-                <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
-                  <span style={{ minWidth: 160, fontWeight: 500, color: '#333' }}>{field.key}</span>
-                  <span style={{ minWidth: 90, color: '#888', fontSize: 13 }}>{field.valueType}</span>
-                  <div style={{ flex: 1 }}>
-                    <ValueEditor
-                      value={field.value}
-                      valueType={field.valueType}
-                      onChange={val => {
-                        setFormData(f => ({
-                          ...f,
-                          config: { ...f.config, [field.key]: val }
-                        }));
-                      }}
-                    />
+                field.key !== '__new__' && (
+                  <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
+                    <span style={{ minWidth: 160, fontWeight: 500, color: '#333' }}>{field.key}</span>
+                    <span style={{ minWidth: 90, color: '#888', fontSize: 13 }}>{field.valueType}</span>
+                    <div style={{ flex: 1 }}>
+                      <ValueEditor
+                        value={field.value}
+                        valueType={field.valueType}
+                        onChange={val => {
+                          setFormData(f => ({
+                            ...f,
+                            config: { ...f.config, [field.key]: val }
+                          }));
+                        }}
+                      />
+                    </div>
+                    {/* Only show cross button for extra (non-template) fields */}
+                    {!(PLUGIN_TEMPLATES[formData.pluginType?.toLowerCase?.()]?.[formData.pluginName] && Object.keys(PLUGIN_TEMPLATES[formData.pluginType?.toLowerCase?.()]?.[formData.pluginName]).includes(field.key)) && (
+                      <button
+                        type="button"
+                        style={{ marginLeft: 8, color: '#e53935', background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}
+                        title="Remove field"
+                        onClick={() => {
+                          setConfigFields(fields => fields.filter((_, i) => i !== idx));
+                          setFormData(f => {
+                            const newConfig = { ...f.config };
+                            delete newConfig[field.key];
+                            return { ...f, config: newConfig };
+                          });
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
-                </div>
+                )
               ))}
             </div>
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="bg-gray-200 px-3 py-1 rounded text-sm"
+                onClick={() => {
+                  if (!configFields.some(f => f.key === '__new__')) {
+                    setConfigFields(fields => [
+                      ...fields,
+                      { key: '__new__', valueType: 'string', value: '' }
+                    ]);
+                  }
+                }}
+              >+ Add Config Field</button>
+            </div>
+            {/* Show new field editor only when Add is clicked */}
+            {configFields.some(f => f.key === '__new__') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, borderBottom: '1px solid #f0f0f0', padding: '4px 0' }}>
+                <input
+                  type="text"
+                  placeholder="Key"
+                  value={configFields.find(f => f.key === '__new__')?.newKey || ''}
+                  onChange={e => {
+                    const newKey = e.target.value;
+                    setConfigFields(fields => fields.map(f => f.key === '__new__' ? { ...f, newKey } : f));
+                  }}
+                  style={{ minWidth: 120, border: '1px solid #ccc', borderRadius: 4, padding: '2px 8px' }}
+                />
+                <select
+                  value={configFields.find(f => f.key === '__new__')?.valueType || 'string'}
+                  onChange={e => {
+                    const newType = e.target.value;
+                    setConfigFields(fields => fields.map(f => f.key === '__new__' ? { ...f, valueType: newType, value: newType === 'boolean' ? true : newType === 'number' ? 0 : '' } : f));
+                  }}
+                  style={{ minWidth: 90, border: '1px solid #ccc', borderRadius: 4, padding: '2px 8px' }}
+                >
+                  <option value="string">string</option>
+                  <option value="number">number</option>
+                  <option value="boolean">boolean</option>
+                  <option value="array">array</option>
+                  <option value="object">object</option>
+                </select>
+                <ValueEditor
+                  value={configFields.find(f => f.key === '__new__')?.value}
+                  valueType={configFields.find(f => f.key === '__new__')?.valueType || 'string'}
+                  onChange={val => {
+                    setConfigFields(fields => fields.map(f => f.key === '__new__' ? { ...f, value: val } : f));
+                  }}
+                />
+                <button
+                  type="button"
+                  style={{ color: '#e53935', background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}
+                  title="Remove field"
+                  onClick={() => {
+                    setConfigFields(fields => fields.filter(f => f.key !== '__new__'));
+                  }}
+                >×</button>
+                <button
+                  type="button"
+                  className="bg-green-500 text-white px-2 py-1 rounded text-xs"
+                  style={{ marginLeft: 4 }}
+                  disabled={!(configFields.find(f => f.key === '__new__')?.newKey)}
+                  onClick={() => {
+                    const newField = configFields.find(f => f.key === '__new__');
+                    if (!newField || !newField.newKey) return;
+                    setFormData(f => ({
+                      ...f,
+                      config: { ...f.config, [newField.newKey]: newField.value }
+                    }));
+                    setConfigFields(fields => [
+                      ...fields.filter(f => f.key !== '__new__'),
+                      { key: newField.newKey, valueType: newField.valueType, value: newField.value }
+                    ]);
+                  }}
+                >✔</button>
+              </div>
+            )}
           </div>
         )}
         <div className="flex gap-2">

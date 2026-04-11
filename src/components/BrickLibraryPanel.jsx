@@ -42,11 +42,37 @@ export default function BrickLibraryPanel({ bricks, onRefresh }) {
 
   return (
     <div className="brick-panel-container">
-      <div className="brick-panel-header">
-        <span className="brick-panel-title">Connector Library</span>
-        <button className="brick-panel-plus" title="Add Brick" onClick={handleAdd}>
-          <FaPlus />
-        </button>
+      <div className="brick-panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span className="brick-panel-title">Connectors Library</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            type="button"
+            title="Source Connector Docs"
+            style={{ background: 'none', border: '1px solid #1976d2', borderRadius: 4, cursor: 'pointer', fontSize: 14, color: '#1976d2', padding: '2px 10px' }}
+            onClick={() => window.open('https://seatunnel.apache.org/docs/2.3.12/connector-v2/source', '_blank')}
+          >
+            Source Doc
+          </button>
+          <button
+            type="button"
+            title="Sink Connector Docs"
+            style={{ background: 'none', border: '1px solid #1976d2', borderRadius: 4, cursor: 'pointer', fontSize: 14, color: '#1976d2', padding: '2px 10px' }}
+            onClick={() => window.open('https://seatunnel.apache.org/docs/2.3.12/connector-v2/sink', '_blank')}
+          >
+            Sink Doc
+          </button>
+          <button
+            type="button"
+            title="Transform Connector Docs"
+            style={{ background: 'none', border: '1px solid #1976d2', borderRadius: 4, cursor: 'pointer', fontSize: 14, color: '#1976d2', padding: '2px 10px' }}
+            onClick={() => window.open('https://seatunnel.apache.org/docs/2.3.12/transform-v2', '_blank')}
+          >
+            Transform Doc
+          </button>
+          <button className="brick-panel-plus" title="Add Connector" onClick={handleAdd}>
+            <FaPlus />
+          </button>
+        </div>
       </div>
       <div className="brick-panel-scroll">
         {bricks.map(brick => (

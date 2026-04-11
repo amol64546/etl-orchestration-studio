@@ -5,27 +5,59 @@ import ReactFlow, {
   applyEdgeChanges,
   Background,
   Controls,
-  MiniMap,
   Panel,
+  MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { createPipeline, updatePipeline, getPipelineById, executePipeline } from '../api/client';
+import '../styles/flowNodes.css';
+import { createPipeline, updatePipeline, getPipelineById, executePipeline, deletePipeline } from '../api/client';
+import EnvConfigPanelUI from './EnvConfigPanelUI';
+import { Handle, Position } from 'reactflow';
+import ValueEditor from './ValueEditor';
+
+// Custom node components matching seatunnel-web style
+const SourceNode = ({ data, selected }) => (
+  <div className={`source-node${selected ? ' selected' : ''}`}>
+    <div className="node-header">Source: {data.label || data.connectorType || 'FakeSource'}</div>
+    <Handle type="source" position={Position.Right} />
+  </div>
+);
+
+const TransformNode = ({ data, selected }) => (
+  <div className={`transform-node${selected ? ' selected' : ''}`}>
+    <div className="node-header">Transform: {data.label || data.connectorType || 'Metadata'}</div>
+    <Handle type="target" position={Position.Left} />
+    <Handle type="source" position={Position.Right} />
+  </div>
+);
+
+const SinkNode = ({ data, selected }) => (
+  <div className={`sink-node${selected ? ' selected' : ''}`}>
+    <div className="node-header">Sink: {data.label || data.connectorType || 'Console'}</div>
+    <Handle type="target" position={Position.Left} />
+  </div>
+);
 
 const nodeTypes = {
-  custom: ({ data }) => (
-    <div className={`px-3 py-2 rounded-lg border-2 shadow-md ${data.type === 'SOURCE' ? 'border-green-400 bg-green-50' : data.type === 'SINK' ? 'border-red-400 bg-red-50' : 'border-amber-400 bg-amber-50'}`}>
-      <div className="font-bold text-sm">{data.label}</div>
-      <div className="text-xs text-gray-600">{data.pluginType}</div>
-      {data.configOverrides && Object.keys(data.configOverrides).length > 0 && (
-        <div className="text-[10px] mt-1 text-gray-500 truncate max-w-[150px]">
-          ⚙️ overrides
-        </div>
-      )}
-    </div>
-  )
+  source: SourceNode,
+  transform: TransformNode,
+  sink: SinkNode,
 };
 
-export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelineId, onPipelineSaved }) {
+export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks, selectedPipelineId, onPipelineSaved, onSelectPipeline }) {
+  const [pipelineToDelete, setPipelineToDelete] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    // Delete pipeline handler
+    const handleDeletePipeline = async (id) => {
+      try {
+        await deletePipeline(id);
+        setShowDeleteConfirm(false);
+        setPipelineToDelete(null);
+        onPipelineSaved?.();
+      } catch (err) {
+        alert('Failed to delete pipeline');
+      }
+    };
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [pipelineName, setPipelineName] = useState('my-pipeline');
@@ -36,6 +68,25 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
   const [executing, setExecuting] = useState(false);
   const [lastJob, setLastJob] = useState(null);
   const [rightTab, setRightTab] = useState('create'); // 'create', 'bricks', 'execute'
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
+  const [configPanelNode, setConfigPanelNode] = useState(null);
+  const [configFields, setConfigFields] = useState([]);
+  // Update configFields when configPanelNode changes
+  useEffect(() => {
+    if (configPanelNode && configPanelNode.data && configPanelNode.data.configOverrides) {
+      const fields = Object.entries(configPanelNode.data.configOverrides).map(([key, value]) => ({
+        key,
+        valueType: typeof value === 'boolean' ? 'boolean' :
+          Array.isArray(value) ? 'array' :
+          typeof value === 'object' ? 'object' :
+          typeof value === 'number' ? 'number' : 'string',
+        value
+      }));
+      setConfigFields(fields);
+    } else {
+      setConfigFields([]);
+    }
+  }, [configPanelNode]);
   const reactFlowWrapper = useRef(null);
 
   useEffect(() => {
@@ -54,23 +105,34 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
       const pipeline = await getPipelineById(id);
       setPipelineName(pipeline.name);
       setCurrentPipelineId(pipeline.id);
-      const flowNodes = pipeline.nodes.map((node, idx) => ({
-        id: node.id,
-        type: 'custom',
-        position: { x: 100 + idx * 250, y: 200 },
-        data: {
-          label: node.name || node.id.slice(-8),
-          pluginType: node.pluginType,
-          type: node.pluginType,
-          configOverrides: node.config || {},
-          brickId: node.id,
-        }
-      }));
+      const flowNodes = pipeline.nodes.map((node, idx) => {
+        let type = 'transform';
+        if (node.pluginType && node.pluginType.toLowerCase().includes('source')) type = 'source';
+        else if (node.pluginType && node.pluginType.toLowerCase().includes('sink')) type = 'sink';
+        return {
+          id: node.id,
+          type,
+          position: { x: 100 + idx * 250, y: 200 },
+          data: {
+            label: node.name || node.id.slice(-8),
+            connectorType: node.pluginType,
+            configOverrides: node.config || {},
+            brickId: node.id,
+          }
+        };
+      });
       const flowEdges = pipeline.edges.map(edge => ({
         id: `e-${edge.source}-${edge.target}`,
         source: edge.source,
         target: edge.target,
         animated: true,
+        style: { stroke: '#1976d2', strokeWidth: 2 },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#1976d2',
+          width: 18,
+          height: 18,
+        },
       }));
       setNodes(flowNodes);
       setEdges(flowEdges);
@@ -81,7 +143,17 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
 
   const onNodesChange = useCallback((changes) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback((changes) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
-  const onConnect = useCallback((connection) => setEdges((eds) => addEdge({ ...connection, animated: true }, eds)), []);
+  const onConnect = useCallback((connection) => setEdges((eds) => addEdge({
+    ...connection,
+    animated: true,
+    style: { stroke: '#1976d2', strokeWidth: 2 },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: '#1976d2',
+      width: 18,
+      height: 18,
+    },
+  }, eds)), []);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -95,14 +167,16 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
     const brick = JSON.parse(rawData);
     const position = { x: event.clientX - 250, y: event.clientY - 100 };
     const newNodeId = `${brick.id}_${Date.now()}`;
+    let type = 'transform';
+    if (brick.pluginType && brick.pluginType.toLowerCase().includes('source')) type = 'source';
+    else if (brick.pluginType && brick.pluginType.toLowerCase().includes('sink')) type = 'sink';
     const newNode = {
       id: newNodeId,
-      type: 'custom',
+      type,
       position,
       data: {
         label: brick.name,
-        pluginType: brick.pluginType,
-        type: brick.pluginType,
+        connectorType: brick.pluginType,
         configOverrides: { ...brick.config },
         brickId: brick.id,
         originalConfig: brick.config,
@@ -111,20 +185,25 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
     setNodes((nds) => nds.concat(newNode));
   }, []);
 
-  const onNodeClick = (_, node) => {
+  // Only open config panel on double click
+  const onNodeClick = () => {};
+  const onNodeDoubleClick = (_, node) => {
     setSelectedNode(node);
-    setNodeConfigOverride(JSON.stringify(node.data.configOverrides || {}, null, 2));
+    setConfigPanelNode(node);
+    setShowConfigPanel(true);
   };
 
   const updateNodeConfig = () => {
-    if (!selectedNode) return;
-    try {
-      const newOverrides = JSON.parse(nodeConfigOverride);
-      setNodes(nds => nds.map(n => n.id === selectedNode.id ? { ...n, data: { ...n.data, configOverrides: newOverrides } } : n));
-      setSelectedNode(null);
-    } catch (e) {
-      alert('Invalid JSON for node overrides');
-    }
+    if (!configPanelNode) return;
+    // Build configOverrides from configFields
+    const newOverrides = {};
+    configFields.forEach(f => {
+      if (f.key && f.key !== '__new__') newOverrides[f.key] = f.value;
+    });
+    setNodes(nds => nds.map(n => n.id === configPanelNode.id ? { ...n, data: { ...n.data, configOverrides: newOverrides } } : n));
+    setShowConfigPanel(false);
+    setConfigPanelNode(null);
+    setSelectedNode(null);
   };
 
   const savePipeline = async () => {
@@ -178,6 +257,108 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
 
   return (
     <div className="flex flex-col h-full gap-4">
+      {/* Config Panel/Modal for node config editing */}
+      {showConfigPanel && configPanelNode && (
+        <>
+          {/* Overlay */}
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 49 }} onClick={() => { setShowConfigPanel(false); setConfigPanelNode(null); setSelectedNode(null); }} />
+          {/* Centered Modal */}
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: '80vh', maxHeight: 800, background: '#fff', zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', padding: 32, display: 'flex', flexDirection: 'column', overflowY: 'auto', borderRadius: 14 }}>
+            <button
+              onClick={() => { setShowConfigPanel(false); setConfigPanelNode(null); setSelectedNode(null); }}
+              style={{ position: 'absolute', top: 16, right: 20, background: 'none', border: 'none', fontSize: 22, color: '#888', cursor: 'pointer', zIndex: 2 }}
+              title="Close"
+            >×</button>
+            <h2 className="text-xl font-semibold mb-4">Edit Connector Config</h2>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Name:</b> {configPanelNode.data.label}</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Type:</b> {configPanelNode.data.connectorType}</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>ID:</b> {configPanelNode.data.brickId}</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Plugin Name:</b> {configPanelNode.data.configOverrides?.plugin_name || ''}</div>
+            <div style={{ fontSize: 14, marginBottom: 8, fontWeight: 500 }}>Config Fields</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {configFields.map((field, idx) => (
+                field.key !== '__new__' && field.key !== 'plugin_name' && (
+                  <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
+                    <span style={{ minWidth: 120, fontWeight: 500, color: '#333' }}>{field.key}</span>
+                    <span style={{ minWidth: 70, color: '#888', fontSize: 13 }}>{field.valueType}</span>
+                    <div style={{ flex: 1 }}>
+                      <ValueEditor
+                        value={field.value}
+                        valueType={field.valueType}
+                        onChange={val => {
+                          setConfigFields(fields => fields.map((f, i) => i === idx ? { ...f, value: val } : f));
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              ))}
+            </div>
+            {/* New field editor */}
+            {configFields.some(f => f.key === '__new__') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, borderBottom: '1px solid #f0f0f0', padding: '4px 0' }}>
+                <input
+                  type="text"
+                  placeholder="Key"
+                  value={configFields.find(f => f.key === '__new__')?.newKey || ''}
+                  onChange={e => {
+                    const newKey = e.target.value;
+                    setConfigFields(fields => fields.map(f => f.key === '__new__' ? { ...f, newKey } : f));
+                  }}
+                  style={{ minWidth: 100, border: '1px solid #ccc', borderRadius: 4, padding: '2px 8px' }}
+                />
+                <select
+                  value={configFields.find(f => f.key === '__new__')?.valueType || 'string'}
+                  onChange={e => {
+                    const newType = e.target.value;
+                    setConfigFields(fields => fields.map(f => f.key === '__new__' ? { ...f, valueType: newType, value: newType === 'boolean' ? true : newType === 'number' ? 0 : '' } : f));
+                  }}
+                  style={{ minWidth: 70, border: '1px solid #ccc', borderRadius: 4, padding: '2px 8px' }}
+                >
+                  <option value="string">string</option>
+                  <option value="number">number</option>
+                  <option value="boolean">boolean</option>
+                  <option value="array">array</option>
+                  <option value="object">object</option>
+                </select>
+                <ValueEditor
+                  value={configFields.find(f => f.key === '__new__')?.value}
+                  valueType={configFields.find(f => f.key === '__new__')?.valueType || 'string'}
+                  onChange={val => {
+                    setConfigFields(fields => fields.map(f => f.key === '__new__' ? { ...f, value: val } : f));
+                  }}
+                />
+                <button
+                  type="button"
+                  style={{ color: '#e53935', background: 'none', border: 'none', fontSize: 18, cursor: 'pointer' }}
+                  title="Remove field"
+                  onClick={() => {
+                    setConfigFields(fields => fields.filter(f => f.key !== '__new__'));
+                  }}
+                >×</button>
+                <button
+                  type="button"
+                  className="bg-green-500 text-white px-2 py-1 rounded text-xs"
+                  style={{ marginLeft: 4 }}
+                  disabled={!(configFields.find(f => f.key === '__new__')?.newKey)}
+                  onClick={() => {
+                    const newField = configFields.find(f => f.key === '__new__');
+                    if (!newField || !newField.newKey) return;
+                    setConfigFields(fields => [
+                      ...fields.filter(f => f.key !== '__new__'),
+                      { key: newField.newKey, valueType: newField.valueType, value: newField.value }
+                    ]);
+                  }}
+                >✔</button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button onClick={updateNodeConfig} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save</button>
+              <button onClick={() => { setShowConfigPanel(false); setConfigPanelNode(null); setSelectedNode(null); }} className="bg-gray-300 px-4 py-2 rounded-md">Cancel</button>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1" >
         <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '85vh' }}>
@@ -191,12 +372,13 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
               onDrop={onDrop}
               onDragOver={onDragOver}
               onNodeClick={onNodeClick}
+              onNodeDoubleClick={onNodeDoubleClick}
               nodeTypes={nodeTypes}
               fitView
             >
               <Background />
               <Controls />
-              <MiniMap />
+              {/* <MiniMap /> removed as requested */}
               {/* Drag bricks panel removed as requested */}
             </ReactFlow>
           </div>
@@ -215,6 +397,7 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
               onClick={() => setRightTab('bricks')}
             >Connectors</button>
             <button
+              style={{ padding: '4px 8px', width: 95 }}
               className={`px-3 py-1 rounded text-sm font-medium ${rightTab === 'execute' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
               onClick={() => setRightTab('execute')}
             >Environment</button>
@@ -222,20 +405,81 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
       
           {/* Tab Content */}
           {rightTab === 'create' && (
-            <></>
+            <div className="flex-1 overflow-y-auto min-w-[200px]">
+              <div className="grid grid-cols-2 gap-2">
+                {pipelines && pipelines.length > 0 ? (
+                  pipelines.map(pipeline => (
+                    <div
+                      key={pipeline.id}
+                      className={`p-2 border rounded bg-gray-50 flex flex-col items-start cursor-pointer relative ${selectedPipelineId === pipeline.id ? 'border-indigo-500 bg-indigo-50' : ''}`}
+                      onClick={() => onSelectPipeline?.(pipeline.id)}
+                    >
+                      <div className="text-xs font-normal truncate w-full">{pipeline.name}</div>
+                      <button
+                        className="absolute top-1 right-1 text-gray-400 hover:text-red-500"
+                        style={{ fontSize: 16, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Delete Pipeline"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setPipelineToDelete(pipeline.id);
+                          setShowDeleteConfirm(true);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm col-span-2">No pipelines available.</div>
+                )}
+              </div>
+              {showDeleteConfirm && (
+                <div className="brick-panel-modal">
+                  <div className="brick-panel-confirm-content brick-panel-confirm-modal">
+                    <div style={{ fontSize: 18, marginBottom: 12 }}>Are you sure you want to delete this pipeline?</div>
+                    <div className="brick-panel-confirm-buttons">
+                      <button className="brick-panel-confirm-btn" onClick={() => handleDeletePipeline(pipelineToDelete)}>Delete</button>
+                      <button className="brick-panel-confirm-btn cancel" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {rightTab === 'bricks' && (
             <div className="flex-1 overflow-y-auto min-w-[200px]">
-              <div className="font-semibold mb-2">All Connectors</div>
               <div className="grid grid-cols-2 gap-2">
                 {bricks && bricks.length > 0 ? (
-                  bricks.map(brick => (
-                    <div key={brick.id} className="p-2 border rounded bg-gray-50 flex flex-col items-start">
-                      <div className="font-medium text-sm truncate w-full">{brick.name}</div>
-                      <div className="text-xs text-gray-500 w-full truncate">{brick.pluginType}</div>
-                    </div>
-                  ))
+                  bricks.map(brick => {
+                    let bg = 'bg-amber-50';
+                    let border = 'border-amber-400';
+                    if (brick.pluginType && brick.pluginType.toLowerCase().includes('source')) {
+                      bg = 'bg-[#ffcdd2]';
+                      border = 'border-[#ffcdd2]';
+                    } else if (brick.pluginType && brick.pluginType.toLowerCase().includes('sink')) {
+                      bg = 'bg-[#c8e6c9]';
+                      border = 'border-[#c8e6c9]';
+                    } else if (brick.pluginType && brick.pluginType.toLowerCase().includes('transform')) {
+                      bg = 'bg-[#bbdefb]';
+                      border = 'border-[#bbdefb]';
+                    }
+                    return (
+                      <div
+                        key={brick.id}
+                        className={`p-2 border rounded flex flex-col items-start cursor-grab ${bg} ${border}`}
+                        style={{ borderWidth: 2, borderStyle: 'solid' }}
+                        draggable
+                        onDragStart={e => {
+                          e.dataTransfer.setData('application/json', JSON.stringify(brick));
+                          e.dataTransfer.effectAllowed = 'copy';
+                        }}
+                      >
+                        <div className="font-medium text-sm truncate w-full">{brick.name}</div>
+                        <div className="text-xs text-gray-500 w-full truncate">{brick.pluginType}</div>
+                      </div>
+                    );
+                  })
                 ) : (
                   <div className="text-gray-400 text-sm col-span-2">No bricks available.</div>
                 )}
@@ -244,18 +488,8 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
           )}
 
           {rightTab === 'execute' && (
-            <div className="flex flex-col gap-2">
-              <div>
-                <label className="block text-sm font-medium">Job Mode</label>
-                <select value={jobMode} onChange={e => setJobMode(e.target.value)} className="border rounded px-3 py-1">
-                  <option>BATCH</option>
-                  <option>STREAMING</option>
-                </select>
-              </div>
-              <button onClick={handleExecute} disabled={executing || !currentPipelineId} className="bg-indigo-600 text-white px-4 py-2 rounded-md disabled:opacity-50">▶️ Execute Pipeline</button>
-              {lastJob && (
-                <div className="text-sm bg-gray-100 px-3 py-1 rounded-full mt-2">Last Job: {lastJob.jobId}</div>
-              )}
+            <div className="flex-1 overflow-y-auto min-w-[200px]" style={{ height: '100%', width: '100%' }}>
+              <EnvConfigPanelUI panelStyle={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }} singleColumn />
             </div>
           )}
         </div>

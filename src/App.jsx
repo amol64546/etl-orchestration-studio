@@ -68,9 +68,11 @@ function App() {
         {activeTab === 'builder' && (
           <PipelineBuilder
             bricks={bricks}
+            pipelines={pipelines}
             refreshBricks={loadBricks}
             selectedPipelineId={selectedPipelineId}
             onPipelineSaved={refreshAll}
+            onSelectPipeline={id => setSelectedPipelineId(id)}
           />
         )}
         {activeTab === 'bricks' && (
