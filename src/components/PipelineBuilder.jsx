@@ -35,6 +35,7 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
   const [jobMode, setJobMode] = useState('BATCH');
   const [executing, setExecuting] = useState(false);
   const [lastJob, setLastJob] = useState(null);
+  const [rightTab, setRightTab] = useState('create'); // 'create', 'bricks', 'execute'
   const reactFlowWrapper = useRef(null);
 
   useEffect(() => {
@@ -177,28 +178,10 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
 
   return (
     <div className="flex flex-col h-full gap-4">
-      <div className="bg-white rounded-xl shadow p-4 flex flex-wrap items-end gap-4">
-        <div className="flex-1 min-w-[200px]">
-          <label className="block text-sm font-medium">Pipeline Name</label>
-          <input value={pipelineName} onChange={e => setPipelineName(e.target.value)} className="border rounded px-3 py-1 w-full" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Job Mode</label>
-          <select value={jobMode} onChange={e => setJobMode(e.target.value)} className="border rounded px-3 py-1">
-            <option>BATCH</option>
-            <option>STREAMING</option>
-          </select>
-        </div>
-        <button onClick={savePipeline} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">💾 Save Pipeline</button>
-        <button onClick={handleExecute} disabled={executing || !currentPipelineId} className="bg-indigo-600 text-white px-4 py-2 rounded-md disabled:opacity-50">▶️ Execute</button>
-        {lastJob && (
-          <div className="text-sm bg-gray-100 px-3 py-1 rounded-full">Last Job: {lastJob.jobId}</div>
-        )}
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1 min-h-[600px]">
-        <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden">
-          <div style={{ height: '65vh' }} ref={reactFlowWrapper}>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1" >
+        <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '85vh' }}>
+          <div style={{ height: '85vh' }} ref={reactFlowWrapper}>
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -214,44 +197,71 @@ export default function PipelineBuilder({ bricks, refreshBricks, selectedPipelin
               <Background />
               <Controls />
               <MiniMap />
-              <Panel position="top-right" className="bg-white/80 text-xs p-1 rounded shadow">
-                🧱 Drag bricks from left panel
-              </Panel>
+              {/* Drag bricks panel removed as requested */}
             </ReactFlow>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow p-4 space-y-4">
-          <h3 className="font-semibold text-lg">⚙️ Node Config Override</h3>
-          {selectedNode ? (
-            <>
-              <p className="text-sm">Editing: <strong>{selectedNode.data.label}</strong> ({selectedNode.data.pluginType})</p>
-              <textarea
-                rows={12}
-                value={nodeConfigOverride}
-                onChange={e => setNodeConfigOverride(e.target.value)}
-                className="w-full border rounded font-mono text-xs p-2"
-              />
-              <button onClick={updateNodeConfig} className="bg-blue-500 text-white px-3 py-1 rounded w-full">Apply Override</button>
-              <button onClick={() => setSelectedNode(null)} className="text-gray-500 text-sm mt-2">Cancel</button>
-            </>
-          ) : (
-            <p className="text-gray-400 text-sm">Click on any node to override its configuration (JSON).</p>
-          )}
-          <div className="border-t pt-3 mt-2">
-            <h4 className="font-medium text-sm mb-2">📌 Available Bricks</h4>
-            <div className="max-h-48 overflow-y-auto space-y-1">
-              {bricks.map(b => (
-                <div key={b.id} draggable onDragStart={(e) => {
-                  e.dataTransfer.setData('application/json', JSON.stringify(b));
-                }} className="p-2 bg-gray-50 rounded cursor-grab text-sm border hover:border-indigo-300">
-                  {b.name} <span className="text-xs text-gray-400">({b.pluginType})</span>
-                </div>
-              ))}
-            </div>
+        {/* Right-side Tabbed Panel */}
+        <div className="bg-white rounded-xl shadow p-4 flex flex-col gap-4" style={{ height: '85vh' }}>
+          {/* Tabs */}
+          <div className="flex gap-2 mb-2">
+            <button
+              className={`px-3 py-1 rounded text-sm font-medium ${rightTab === 'create' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setRightTab('create')}
+            >Pipelines</button>
+            <button
+              className={`px-3 py-1 rounded text-sm font-medium ${rightTab === 'bricks' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setRightTab('bricks')}
+            >Connectors</button>
+            <button
+              className={`px-3 py-1 rounded text-sm font-medium ${rightTab === 'execute' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setRightTab('execute')}
+            >Environment</button>
           </div>
+      
+          {/* Tab Content */}
+          {rightTab === 'create' && (
+            <></>
+          )}
+
+          {rightTab === 'bricks' && (
+            <div className="flex-1 overflow-y-auto min-w-[200px]">
+              <div className="font-semibold mb-2">All Connectors</div>
+              <div className="grid grid-cols-2 gap-2">
+                {bricks && bricks.length > 0 ? (
+                  bricks.map(brick => (
+                    <div key={brick.id} className="p-2 border rounded bg-gray-50 flex flex-col items-start">
+                      <div className="font-medium text-sm truncate w-full">{brick.name}</div>
+                      <div className="text-xs text-gray-500 w-full truncate">{brick.pluginType}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm col-span-2">No bricks available.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {rightTab === 'execute' && (
+            <div className="flex flex-col gap-2">
+              <div>
+                <label className="block text-sm font-medium">Job Mode</label>
+                <select value={jobMode} onChange={e => setJobMode(e.target.value)} className="border rounded px-3 py-1">
+                  <option>BATCH</option>
+                  <option>STREAMING</option>
+                </select>
+              </div>
+              <button onClick={handleExecute} disabled={executing || !currentPipelineId} className="bg-indigo-600 text-white px-4 py-2 rounded-md disabled:opacity-50">▶️ Execute Pipeline</button>
+              {lastJob && (
+                <div className="text-sm bg-gray-100 px-3 py-1 rounded-full mt-2">Last Job: {lastJob.jobId}</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Duplicate flow editor panel removed as requested */}
     </div>
   );
 }

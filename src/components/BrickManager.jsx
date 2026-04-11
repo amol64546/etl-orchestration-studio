@@ -91,7 +91,7 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
         config
       };
       if (editingId) {
-        await updateBrick(editingId, { config: payload.config });
+        await updateBrick(editingId, payload);
         setMessage('Brick updated');
         resetForm(true); // close after edit
         onRefresh();
@@ -149,7 +149,7 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
       padding: 10,
       position: 'relative',
     }}>
-      <h2 className="text-xl font-semibold mb-4">{editingId ? '✏️ Edit Brick' : '➕ Create Brick'}</h2>
+      <h2 className="text-xl font-semibold mb-4">{editingId ? '✏️ Edit Connector' : '➕ Create Connector'}</h2>
       {message && <div className="text-red-500 mb-2">{message}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -163,7 +163,7 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Plugin Type</label>
+          <label className="block text-sm font-medium">Connector Type</label>
           <select
             value={formData.pluginType}
             onChange={e => setFormData({ ...formData, pluginType: e.target.value, pluginName: '', config: {} })}
@@ -173,7 +173,7 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium">Plugin Name</label>
+          <label className="block text-sm font-medium">Connector Name</label>
           <select
             value={formData.pluginName}
             onChange={e => setFormData({ ...formData, pluginName: e.target.value })}
@@ -181,7 +181,7 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
             required
             disabled={!formData.pluginType}
           >
-            <option value="">Select a plugin</option>
+            <option value="">Select a connector</option>
             {formData.pluginType && (PLUGIN_LISTS[formData.pluginType] || []).map(p => (
               <option key={p} value={p}>{p}</option>
             ))}

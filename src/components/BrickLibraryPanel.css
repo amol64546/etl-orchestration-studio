@@ -59,7 +59,7 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   width: 220px;
-  height: 120px;
+  height: 155px;
   padding: 20px 16px 16px 16px;
   display: flex;
   flex-direction: column;
@@ -98,6 +98,7 @@
   background: #ffeaea;
 }
 
+
 .brick-panel-modal {
   position: fixed;
   left: 0;
@@ -106,21 +107,31 @@
   height: 100vh;
   background: rgba(0,0,0,0.18);
   display: flex;
-  align-items: flex-start;
+  align-items: center; /* Center vertically */
+  justify-content: center; /* Center horizontally */
   z-index: 1000;
 }
 
 .brick-panel-modal-content {
   background: #fff;
-  margin: 60px auto 0 auto;
   padding: 32px 32px 24px 32px;
   border-radius: 12px;
   min-width: 420px;
   max-width: 95vw;
   max-height: 90vh;
-  overflow: auto;
+  height: auto;
+  overflow-y: auto;
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  .brick-panel-modal-content {
+    min-width: 90vw;
+    padding: 12px 8px 12px 8px;
+  }
 }
 
 .brick-panel-close {
@@ -144,6 +155,19 @@
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
   text-align: center;
+}
+
+/* Centered, small confirm modal */
+.brick-panel-confirm-modal {
+  min-width: 280px;
+  max-width: 90vw;
+  min-height: unset;
+  max-height: unset;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .brick-panel-confirm-buttons {

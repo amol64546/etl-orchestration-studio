@@ -43,7 +43,7 @@ export default function BrickLibraryPanel({ bricks, onRefresh }) {
   return (
     <div className="brick-panel-container">
       <div className="brick-panel-header">
-        <span className="brick-panel-title">Bricks Library</span>
+        <span className="brick-panel-title">Connector Library</span>
         <button className="brick-panel-plus" title="Add Brick" onClick={handleAdd}>
           <FaPlus />
         </button>
@@ -72,7 +72,13 @@ export default function BrickLibraryPanel({ bricks, onRefresh }) {
             <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#1976d2', marginBottom: 6 }}>{brick.name}</div>
             <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>{brick.pluginType}</div>
             <div style={{ fontSize: 13, color: '#444', marginBottom: 4 }}>
-              {brick.config?.plugin_name ? `Plugin: ${brick.config.plugin_name}` : ''}
+              {brick.config?.plugin_name ? `Connector: ${brick.config.plugin_name}` : ''}
+            </div>
+            <div style={{ fontSize: 11, color: '#888', marginBottom: 2 }}>
+              <span>Created: {brick.createdOn ? brick.createdOn : '-'}</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#888' }}>
+              <span>Updated: {brick.updatedOn ? brick.updatedOn : '-'}</span>
             </div>
           </div>
         ))}
@@ -91,8 +97,8 @@ export default function BrickLibraryPanel({ bricks, onRefresh }) {
         </div>
       )}
       {confirmOpen && (
-        <div className="brick-panel-confirm">
-          <div className="brick-panel-confirm-content">
+        <div className="brick-panel-modal">
+          <div className="brick-panel-confirm-content brick-panel-confirm-modal">
             <div style={{ fontSize: 18, marginBottom: 12 }}>Are you sure you want to delete this brick?</div>
             <div className="brick-panel-confirm-buttons">
               <button className="brick-panel-confirm-btn" onClick={confirmDelete}>Delete</button>

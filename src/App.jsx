@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BrickLibraryPanel from './components/BrickLibraryPanel';
 import PipelineBuilder from './components/PipelineBuilder';
-// import JobMonitor from './components/JobMonitor';
 import { fetchPipelines, fetchBricks } from './api/client';
 
 function App() {
@@ -52,7 +51,7 @@ function App() {
               onClick={() => setActiveTab('bricks')}
               className={`px-4 py-2 rounded-lg font-medium transition ${activeTab === 'bricks' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
-              📦 Bricks Library
+              📦 Connector Library
             </button>
             <button
               onClick={() => setActiveTab('jobs')}
@@ -62,27 +61,7 @@ function App() {
             </button>
           </div>
         </div>
-        {activeTab === 'builder' && pipelines.length > 0 && (
-          <div className="mt-3 flex items-center gap-2 text-sm">
-            <span className="text-gray-500">Load pipeline:</span>
-            <select
-              className="border rounded-md px-2 py-1 bg-white"
-              value={selectedPipelineId || ''}
-              onChange={(e) => setSelectedPipelineId(e.target.value || null)}
-            >
-              <option value="">-- Create New --</option>
-              {pipelines.map(p => (
-                <option key={p.id} value={p.id}>{p.name} (id: {p.id.slice(-6)})</option>
-              ))}
-            </select>
-            <button
-              onClick={() => setSelectedPipelineId(null)}
-              className="text-xs bg-gray-200 px-2 py-1 rounded"
-            >
-              Clear
-            </button>
-          </div>
-        )}
+        {/* Load pipeline section removed as requested */}
       </header>
 
       <main className="flex-1 p-4">
