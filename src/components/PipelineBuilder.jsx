@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { FaSave, FaPlus } from 'react-icons/fa';
 import ReactFlow, {
   addEdge,
   applyNodeChanges,
@@ -11,29 +12,49 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import '../styles/flowNodes.css';
 import { createPipeline, updatePipeline, getPipelineById, executePipeline, deletePipeline } from '../api/client';
+import PipelineLibrary from './PipelineLibrary';
 import EnvConfigPanelUI from './EnvConfigPanelUI';
 import { Handle, Position } from 'reactflow';
 import ValueEditor from './ValueEditor';
 
 // Custom node components matching seatunnel-web style
+
+const nodeBoxStyle = {
+  minWidth: 90,
+  maxWidth: 140,
+  minHeight: 32,
+  padding: '4px 8px',
+  fontSize: 12,
+  fontWeight: 'normal',
+  borderRadius: 8,
+  boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+  background: '#f8fafc',
+  border: '1.5px solid #bcd',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  lineHeight: 1.2,
+};
+
 const SourceNode = ({ data, selected }) => (
-  <div className={`source-node${selected ? ' selected' : ''}`}>
-    <div className="node-header">Source: {data.label || data.connectorType || 'FakeSource'}</div>
+  <div className={`source-node${selected ? ' selected' : ''}`} style={nodeBoxStyle}>
+    <div style={{ fontSize: 12, fontWeight: 'normal', marginBottom: 2 }}>Source: {data.label || data.connectorType || 'FakeSource'}</div>
     <Handle type="source" position={Position.Right} />
   </div>
 );
 
 const TransformNode = ({ data, selected }) => (
-  <div className={`transform-node${selected ? ' selected' : ''}`}>
-    <div className="node-header">Transform: {data.label || data.connectorType || 'Metadata'}</div>
+  <div className={`transform-node${selected ? ' selected' : ''}`} style={nodeBoxStyle}>
+    <div style={{ fontSize: 12, fontWeight: 'normal', marginBottom: 2 }}>Transform: {data.label || data.connectorType || 'Metadata'}</div>
     <Handle type="target" position={Position.Left} />
     <Handle type="source" position={Position.Right} />
   </div>
 );
 
 const SinkNode = ({ data, selected }) => (
-  <div className={`sink-node${selected ? ' selected' : ''}`}>
-    <div className="node-header">Sink: {data.label || data.connectorType || 'Console'}</div>
+  <div className={`sink-node${selected ? ' selected' : ''}`} style={nodeBoxStyle}>
+    <div style={{ fontSize: 12, fontWeight: 'normal', marginBottom: 2 }}>Sink: {data.label || data.connectorType || 'Console'}</div>
     <Handle type="target" position={Position.Left} />
   </div>
 );
@@ -45,6 +66,7 @@ const nodeTypes = {
 };
 
 export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks, selectedPipelineId, onPipelineSaved, onSelectPipeline }) {
+  const [errorModal, setErrorModal] = useState(null);
   const [pipelineToDelete, setPipelineToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     // Delete pipeline handler
@@ -89,6 +111,8 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   }, [configPanelNode]);
   const reactFlowWrapper = useRef(null);
 
+
+  // When selectedPipelineId changes, load pipeline if set, else clear state
   useEffect(() => {
     if (selectedPipelineId) {
       loadPipeline(selectedPipelineId);
@@ -98,6 +122,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setCurrentPipelineId(null);
       setPipelineName('new-pipeline');
     }
+    // eslint-disable-next-line
   }, [selectedPipelineId]);
 
   const loadPipeline = async (id) => {
@@ -229,11 +254,13 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         saved = await createPipeline(payload);
       }
       setCurrentPipelineId(saved.id);
+      // Success: clear any previous error
+      setErrorModal(null);
       alert(`Pipeline ${currentPipelineId ? 'updated' : 'created'} with ID: ${saved.id}`);
       onPipelineSaved?.();
     } catch (err) {
       console.error(err);
-      alert('Failed to save pipeline');
+      setErrorModal(err?.message || 'Failed to save pipeline');
     }
   };
 
@@ -257,6 +284,43 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
 
   return (
     <div className="flex flex-col h-full gap-4">
+      {/* Error Modal */}
+      {errorModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.18)',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <div style={{
+            minWidth: 320,
+            maxWidth: 420,
+            background: '#fff',
+            borderRadius: 12,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            padding: 32,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 16,
+            fontSize: 16,
+          }}>
+            <div style={{ color: '#e53935', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>Error</div>
+            <div style={{ color: '#333', textAlign: 'center', marginBottom: 8 }}>{errorModal}</div>
+            <button
+              onClick={() => setErrorModal(null)}
+              style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 18px', fontSize: 15, cursor: 'pointer' }}
+            >Close</button>
+          </div>
+        </div>
+      )}
+
       {/* Config Panel/Modal for node config editing */}
       {showConfigPanel && configPanelNode && (
         <>
@@ -361,7 +425,31 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1" >
-        <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '85vh' }}>
+        <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '85vh', position: 'relative' }}>
+          {/* Save Pipeline Button - top right of left panel */}
+          <button
+            onClick={savePipeline}
+            title="Save Pipeline"
+            style={{
+              position: 'absolute',
+              top: 12,
+              right: 18,
+              zIndex: 20,
+              background: '#1976d2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '7px 12px',
+              fontSize: 18,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            <FaSave style={{ fontSize: 18 }} />
+          </button>
           <div style={{ height: '85vh' }} ref={reactFlowWrapper}>
             <ReactFlow
               nodes={nodes}
@@ -389,63 +477,15 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
           {/* Tabs */}
           <div className="flex gap-2 mb-2">
             <button
-              className={`px-3 py-1 rounded text-sm font-medium ${rightTab === 'create' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-              onClick={() => setRightTab('create')}
-            >Pipelines</button>
-            <button
               className={`px-3 py-1 rounded text-sm font-medium ${rightTab === 'bricks' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
               onClick={() => setRightTab('bricks')}
             >Connectors</button>
             <button
-              style={{ padding: '4px 8px', width: 95 }}
+              style={{ padding: '4px 8px', width: 100 }}
               className={`px-3 py-1 rounded text-sm font-medium ${rightTab === 'execute' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
               onClick={() => setRightTab('execute')}
             >Environment</button>
           </div>
-      
-          {/* Tab Content */}
-          {rightTab === 'create' && (
-            <div className="flex-1 overflow-y-auto min-w-[200px]">
-              <div className="grid grid-cols-2 gap-2">
-                {pipelines && pipelines.length > 0 ? (
-                  pipelines.map(pipeline => (
-                    <div
-                      key={pipeline.id}
-                      className={`p-2 border rounded bg-gray-50 flex flex-col items-start cursor-pointer relative ${selectedPipelineId === pipeline.id ? 'border-indigo-500 bg-indigo-50' : ''}`}
-                      onClick={() => onSelectPipeline?.(pipeline.id)}
-                    >
-                      <div className="text-xs font-normal truncate w-full">{pipeline.name}</div>
-                      <button
-                        className="absolute top-1 right-1 text-gray-400 hover:text-red-500"
-                        style={{ fontSize: 16, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                        title="Delete Pipeline"
-                        onClick={e => {
-                          e.stopPropagation();
-                          setPipelineToDelete(pipeline.id);
-                          setShowDeleteConfirm(true);
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-sm col-span-2">No pipelines available.</div>
-                )}
-              </div>
-              {showDeleteConfirm && (
-                <div className="brick-panel-modal">
-                  <div className="brick-panel-confirm-content brick-panel-confirm-modal">
-                    <div style={{ fontSize: 18, marginBottom: 12 }}>Are you sure you want to delete this pipeline?</div>
-                    <div className="brick-panel-confirm-buttons">
-                      <button className="brick-panel-confirm-btn" onClick={() => handleDeletePipeline(pipelineToDelete)}>Delete</button>
-                      <button className="brick-panel-confirm-btn cancel" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {rightTab === 'bricks' && (
             <div className="flex-1 overflow-y-auto min-w-[200px]">
