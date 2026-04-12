@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { FaSave, FaPlus } from 'react-icons/fa';
+import { FaSave, FaPlus, FaPlay, FaStop } from 'react-icons/fa';
 import ReactFlow, {
   addEdge,
   applyNodeChanges,
@@ -12,10 +12,14 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import '../styles/flowNodes.css';
 import { createPipeline, updatePipeline, getPipelineById, executePipeline, deletePipeline } from '../api/client';
+import axios from 'axios';
 import PipelineLibrary from './PipelineLibrary';
 import EnvConfigPanelUI from './EnvConfigPanelUI';
 import { Handle, Position } from 'reactflow';
 import ValueEditor from './ValueEditor';
+import CreatePipelineDialog from './CreatePipelineDialog';
+import RenamePipelineDialog from './RenamePipelineDialog';
+import Toast from './Toast';
 
 // Custom node components matching seatunnel-web style
 
@@ -66,9 +70,37 @@ const nodeTypes = {
 };
 
 export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks, selectedPipelineId, onPipelineSaved, onSelectPipeline }) {
+    // Track selected elements for deletion
+    const [selectedElements, setSelectedElements] = useState({ nodes: [], edges: [] });
+
+    // Keyboard handler for Delete key
+    useEffect(() => {
+      const handleDeleteKey = (e) => {
+        if (e.key === 'Delete') {
+          if (selectedElements.nodes.length > 0) {
+            setNodes(nds => nds.filter(n => !selectedElements.nodes.includes(n.id)));
+          }
+          if (selectedElements.edges.length > 0) {
+            setEdges(eds => eds.filter(e => !selectedElements.edges.includes(e.id)));
+          }
+        }
+      };
+      window.addEventListener('keydown', handleDeleteKey);
+      return () => window.removeEventListener('keydown', handleDeleteKey);
+    }, [selectedElements]);
+    // Selection handler for ReactFlow
+    const onSelectionChange = useCallback(({ nodes, edges }) => {
+      setSelectedElements({
+        nodes: nodes?.map(n => n.id) || [],
+        edges: edges?.map(e => e.id) || [],
+      });
+    }, []);
   const [errorModal, setErrorModal] = useState(null);
   const [pipelineToDelete, setPipelineToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [pendingRename, setPendingRename] = useState('');
     // Delete pipeline handler
     const handleDeletePipeline = async (id) => {
       try {
@@ -82,7 +114,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     };
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
-  const [pipelineName, setPipelineName] = useState('my-pipeline');
+  const [pipelineName, setPipelineName] = useState('Untitled Pipeline');
   const [currentPipelineId, setCurrentPipelineId] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [nodeConfigOverride, setNodeConfigOverride] = useState('');
@@ -90,6 +122,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   const [executing, setExecuting] = useState(false);
   const [lastJob, setLastJob] = useState(null);
   const [rightTab, setRightTab] = useState('create'); // 'create', 'bricks', 'execute'
+  const [envConfig, setEnvConfig] = useState({});
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [configPanelNode, setConfigPanelNode] = useState(null);
   const [configFields, setConfigFields] = useState([]);
@@ -120,10 +153,14 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setNodes([]);
       setEdges([]);
       setCurrentPipelineId(null);
-      setPipelineName('new-pipeline');
+      setPipelineName('Untitled Pipeline');
     }
     // eslint-disable-next-line
   }, [selectedPipelineId]);
+
+  useEffect(() => {
+    setRightTab('bricks');
+  }, []);
 
   const loadPipeline = async (id) => {
     try {
@@ -134,13 +171,16 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         let type = 'transform';
         if (node.pluginType && node.pluginType.toLowerCase().includes('source')) type = 'source';
         else if (node.pluginType && node.pluginType.toLowerCase().includes('sink')) type = 'sink';
+        // Label should be 'pluginType: name' if name exists, else fallback
+        const label = node.pluginType
+          ? (node.name ? `${node.pluginType}: ${node.name}` : `${node.pluginType}: ${node.id.slice(-8)}`)
+          : (node.name || node.id.slice(-8));
         return {
           id: node.id,
           type,
           position: { x: 100 + idx * 250, y: 200 },
           data: {
-            label: node.name || node.id.slice(-8),
-            connectorType: node.pluginType,
+            connectorType: node.name,
             configOverrides: node.config || {},
             brickId: node.id,
           }
@@ -232,6 +272,10 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   };
 
   const savePipeline = async () => {
+    if (!currentPipelineId) {
+      setShowCreateDialog(true);
+      return;
+    }
     const pipelineNodes = nodes.map(node => ({
       id: node.data.brickId,
       pluginType: node.data.pluginType,
@@ -246,17 +290,14 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       nodes: pipelineNodes,
       edges: pipelineEdges,
     };
+    if (currentPipelineId) payload.id = currentPipelineId;
     try {
-      let saved;
-      if (currentPipelineId) {
-        saved = await updatePipeline(currentPipelineId, payload);
-      } else {
-        saved = await createPipeline(payload);
-      }
+      // Always use createPipeline (PUT) for both create and update
+      const saved = await createPipeline(payload);
       setCurrentPipelineId(saved.id);
-      // Success: clear any previous error
       setErrorModal(null);
-      alert(`Pipeline ${currentPipelineId ? 'updated' : 'created'} with ID: ${saved.id}`);
+      setToastMessage(`Pipeline ${currentPipelineId ? 'updated' : 'created'} successfully!`);
+      setToastOpen(true);
       onPipelineSaved?.();
     } catch (err) {
       console.error(err);
@@ -264,6 +305,37 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     }
   };
 
+  const handleCreatePipeline = async (name) => {
+    setPipelineName(name);
+    setShowCreateDialog(false);
+    // Now actually save pipeline with the name
+    const pipelineNodes = nodes.map(node => ({
+      id: node.data.brickId,
+      pluginType: node.data.pluginType,
+      config: node.data.configOverrides || {},
+    }));
+    const pipelineEdges = edges.map(edge => ({
+      source: edge.source,
+      target: edge.target,
+    }));
+    const payload = {
+      name,
+      nodes: pipelineNodes,
+      edges: pipelineEdges,
+    };
+    try {
+      const saved = await createPipeline(payload);
+      setCurrentPipelineId(saved.id);
+      setErrorModal(null);
+      setToastMessage(`Pipeline created with ID: ${saved.id}`);
+      setToastOpen(true);
+      onPipelineSaved?.();
+    } catch (err) {
+      setErrorModal(err?.message || 'Failed to create pipeline');
+    }
+  };
+
+  // Execute pipeline with environment config
   const handleExecute = async () => {
     if (!currentPipelineId) {
       alert('Please save pipeline first');
@@ -271,19 +343,51 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     }
     setExecuting(true);
     try {
-      const job = await executePipeline(currentPipelineId, jobMode);
-      setLastJob(job);
-      alert(`Job submitted: ${job.jobId} - status: ${job.jobStatus}`);
+      // Use all env config from the Environment tab
+      const envBody = envConfig && Object.keys(envConfig).length > 0 ? envConfig : { "job.mode": jobMode };
+      const res = await axios.post(
+        `http://localhost:8081/pipelines/execute/${currentPipelineId}`,
+        envBody,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      setLastJob(res.data);
+      alert(`Job submitted: ${res.data.jobId || ''} - status: ${res.data.jobStatus || ''}`);
     } catch (err) {
-      console.error(err);
-      alert('Execution failed');
+      console.error('Pipeline execution error:', err);
+      let status = err?.response?.status || err?.status || 'Error';
+      let message = '';
+      let raw = '';
+      if (err?.response?.data) {
+        const data = err.response.data;
+        if (typeof data === 'string') {
+          message = data;
+        } else if (data.errorObject) {
+          // Show both errorObject.status and errorObject.message if present
+          message = (data.errorObject.status ? `[${data.errorObject.status}] ` : '') + (data.errorObject.message || JSON.stringify(data.errorObject));
+        } else if (data.message) {
+          message = data.message;
+        } else {
+          message = JSON.stringify(data, null, 2);
+        }
+        raw = JSON.stringify(data, null, 2);
+      } else if (err?.message) {
+        message = err.message;
+        raw = JSON.stringify(err, null, 2);
+      } else {
+        message = JSON.stringify(err, null, 2);
+        raw = message;
+      }
+      setErrorModal({ status, message, raw });
     } finally {
       setExecuting(false);
     }
   };
 
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   return (
-    <div className="flex flex-col h-full gap-4">
+    <>
       {/* Error Modal */}
       {errorModal && (
         <div style={{
@@ -300,7 +404,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         }}>
           <div style={{
             minWidth: 320,
-            maxWidth: 420,
+            maxWidth: 520,
             background: '#fff',
             borderRadius: 12,
             boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
@@ -312,7 +416,22 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
             fontSize: 16,
           }}>
             <div style={{ color: '#e53935', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>Error</div>
-            <div style={{ color: '#333', textAlign: 'center', marginBottom: 8 }}>{errorModal}</div>
+            {typeof errorModal === 'object' && errorModal !== null ? (
+              <>
+                <div style={{ color: '#333', textAlign: 'center', marginBottom: 8 }}>
+                  <div><b>Status:</b> {errorModal.status}</div>
+                  <div style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}><b>Message:</b> {errorModal.message}</div>
+                  {errorModal.raw && (
+                    <details style={{ marginTop: 12, fontSize: 13, color: '#666', background: '#f7f7f7', borderRadius: 6, padding: 10 }}>
+                      <summary style={{ cursor: 'pointer', fontWeight: 500 }}>Show raw error data</summary>
+                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>{errorModal.raw}</pre>
+                    </details>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div style={{ color: '#333', textAlign: 'center', marginBottom: 8, whiteSpace: 'pre-wrap' }}>{errorModal}</div>
+            )}
             <button
               onClick={() => setErrorModal(null)}
               style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 18px', fontSize: 15, cursor: 'pointer' }}
@@ -424,33 +543,72 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         </>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1" >
-        <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '85vh', position: 'relative' }}>
-          {/* Save Pipeline Button - top right of left panel */}
-          <button
-            onClick={savePipeline}
-            title="Save Pipeline"
-            style={{
-              position: 'absolute',
-              top: 12,
-              right: 18,
-              zIndex: 20,
-              background: '#1976d2',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              padding: '7px 12px',
-              fontSize: 18,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1" style={{ height: 'calc(100vh - 48px)' }}>
+        <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '100%', position: 'relative', background: '#fff' }}>
+          {/* Trigger and Save Pipeline Buttons - top right of left panel */}
+          <div style={{ position: 'absolute', top: 12, right: 18, zIndex: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              onClick={async () => {
+                if (!currentPipelineId) return;
+                if (!executing) {
+                  setExecuting(true);
+                  try {
+                    await executePipeline(currentPipelineId, jobMode);
+                  } catch (err) {
+                    setErrorModal(err?.message || 'Failed to trigger pipeline');
+                  }
+                } else {
+                  // Stop job logic (optional: you may want to track jobId for real stop)
+                  setExecuting(false);
+                  // Optionally call stopJob here if you have jobId
+                }
+              }}
+              title={executing ? 'Stop Pipeline' : 'Trigger Pipeline'}
+              style={{
+                background: executing ? '#e53935' : '#43a047',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '7px 12px',
+                fontSize: 18,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              {executing ? <FaStop style={{ fontSize: 18 }} /> : <FaPlay style={{ fontSize: 18 }} />}
+            </button>
+            <button
+              onClick={savePipeline}
+              title="Save Pipeline"
+              style={{
+                background: '#1976d2',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '7px 12px',
+                fontSize: 18,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <FaSave style={{ fontSize: 18 }} />
+            </button>
+          </div>
+          {/* Pipeline Name Header (inside flow editor panel) */}
+          <div
+            style={{ position: 'absolute', top: 18, left: 18, zIndex: 40, background: 'rgba(255,255,255,0.92)', borderRadius: 8, boxShadow: '0 2px 8px rgba(25,118,210,0.07)', padding: '7px 18px', fontWeight: 700, fontSize: 18, color: '#1976d2', minWidth: 120, maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}
+            title={pipelineName}
+            onDoubleClick={() => setShowRenameDialog(true)}
           >
-            <FaSave style={{ fontSize: 18 }} />
-          </button>
-          <div style={{ height: '85vh' }} ref={reactFlowWrapper}>
+            {pipelineName || 'Untitled Pipeline'}
+          </div>
+          <div style={{ height: '100%' }} ref={reactFlowWrapper}>
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -462,9 +620,11 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
               onNodeClick={onNodeClick}
               onNodeDoubleClick={onNodeDoubleClick}
               nodeTypes={nodeTypes}
+              onSelectionChange={onSelectionChange}
               fitView
+              style={{ background: '#fff' }}
             >
-              <Background />
+              <Background style={{ background: '#fff' }} />
               <Controls />
               {/* <MiniMap /> removed as requested */}
               {/* Drag bricks panel removed as requested */}
@@ -473,7 +633,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         </div>
 
         {/* Right-side Tabbed Panel */}
-        <div className="bg-white rounded-xl shadow p-4 flex flex-col gap-4" style={{ height: '85vh' }}>
+        <div className="bg-white rounded-xl shadow p-4 flex flex-col gap-4" style={{ height: '100%' }}>
           {/* Tabs */}
           <div className="flex gap-2 mb-2">
             <button
@@ -529,13 +689,58 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
 
           {rightTab === 'execute' && (
             <div className="flex-1 overflow-y-auto min-w-[200px]" style={{ height: '100%', width: '100%' }}>
-              <EnvConfigPanelUI panelStyle={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }} singleColumn />
+              <EnvConfigPanelUI
+                panelStyle={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                singleColumn
+                value={envConfig}
+                onChange={setEnvConfig}
+              />
             </div>
           )}
         </div>
       </div>
 
-      {/* Duplicate flow editor panel removed as requested */}
-    </div>
+      <CreatePipelineDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onCreate={handleCreatePipeline}
+      />
+      <RenamePipelineDialog
+        open={showRenameDialog}
+        initialName={pipelineName}
+        onClose={() => setShowRenameDialog(false)}
+        onRename={async (newName) => {
+          setShowRenameDialog(false);
+          setPipelineName(newName);
+          // Save pipeline with new name
+          const pipelineNodes = nodes.map(node => ({
+            id: node.data.brickId,
+            pluginType: node.data.pluginType,
+            config: node.data.configOverrides || {},
+          }));
+          const pipelineEdges = edges.map(edge => ({
+            source: edge.source,
+            target: edge.target,
+          }));
+          const payload = {
+            id: currentPipelineId,
+            name: newName,
+            nodes: pipelineNodes,
+            edges: pipelineEdges,
+          };
+          try {
+            const saved = await createPipeline(payload);
+            setCurrentPipelineId(saved.id);
+            setErrorModal(null);
+            setToastMessage('Pipeline renamed and saved successfully!');
+            setToastOpen(true);
+            onPipelineSaved?.();
+          } catch (err) {
+            setErrorModal(err?.message || 'Failed to rename pipeline');
+          }
+        }}
+      />
+      <Toast open={toastOpen} message={toastMessage} onClose={() => setToastOpen(false)} />
+    </>
   );
 }

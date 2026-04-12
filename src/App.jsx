@@ -2,11 +2,20 @@ import React, { useState, useEffect } from 'react';
 import BrickLibraryPanel from './components/BrickLibraryPanel';
 import PipelineBuilder from './components/PipelineBuilder';
 import PipelineLibrary from './components/PipelineLibrary';
-import { fetchPipelines, fetchBricks } from './api/client';
+import { fetchPipelines, fetchBricks, createPipeline, deletePipeline } from './api/client';
+import CreatePipelineDialog from './components/CreatePipelineDialog';
 
 
 function App() {
-  const [activeTab, setActiveTab] = useState('builder');
+  // Read initial tab from localStorage, default to 'builder'
+  const getInitialTab = () => {
+    try {
+      return localStorage.getItem('activeTab') || 'builder';
+    } catch {
+      return 'builder';
+    }
+  };
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bricks, setBricks] = useState([]);
   const [pipelines, setPipelines] = useState([]);
@@ -15,7 +24,7 @@ function App() {
   // PipelineBuilder state lifted up
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
-  const [pipelineName, setPipelineName] = useState('my-pipeline');
+  const [pipelineName, setPipelineName] = useState('Untitled Pipeline');
   const [currentPipelineId, setCurrentPipelineId] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [nodeConfigOverride, setNodeConfigOverride] = useState('');
@@ -28,6 +37,7 @@ function App() {
   const [configFields, setConfigFields] = useState([]);
   const [pipelineToDelete, setPipelineToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const loadBricks = async () => {
     try {
@@ -52,7 +62,24 @@ function App() {
     loadPipelines();
   }, [refreshTrigger]);
 
+  // Persist activeTab to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('activeTab', activeTab);
+    } catch {}
+  }, [activeTab]);
+
   const refreshAll = () => setRefreshTrigger(prev => prev + 1);
+
+  const handleCreatePipeline = async (name) => {
+    try {
+      await createPipeline({ name });
+      setShowCreateDialog(false);
+      refreshAll();
+    } catch (err) {
+      alert('Failed to create pipeline');
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-row">
@@ -126,7 +153,7 @@ function App() {
           <PipelineLibrary
             pipelines={pipelines}
             selectedPipelineId={selectedPipelineId}
-            onCreate={() => {/* TODO: open create pipeline modal or handler */}}
+            onCreate={() => setShowCreateDialog(true)}
             onSelect={id => setSelectedPipelineId(id)}
             onDelete={async id => {
               try {
@@ -136,8 +163,21 @@ function App() {
                 alert('Failed to delete pipeline');
               }
             }}
+            onDoubleSelect={id => {
+              // Always reload pipeline by resetting selectedPipelineId first
+              setSelectedPipelineId(null);
+              setTimeout(() => {
+                setSelectedPipelineId(id);
+                setActiveTab('builder');
+              }, 0);
+            }}
           />
         </div>
+        <CreatePipelineDialog
+          open={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
+          onCreate={handleCreatePipeline}
+        />
         {/* Connector Library tab */}
         <div style={{ display: activeTab === 'bricks' ? 'block' : 'none', height: '100%' }}>
           <BrickLibraryPanel

@@ -1,0 +1,82 @@
+.dialog-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.18);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog-box {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(25,118,210,0.18);
+  padding: 32px 28px 24px 28px;
+  min-width: 320px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.dialog-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.dialog-input {
+  padding: 10px 12px;
+  border: 1.5px solid #bcd;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 18px;
+  outline: none;
+  transition: border 0.2s;
+}
+.dialog-input:focus {
+  border-color: #1976d2;
+}
+.dialog-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.dialog-btn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+.dialog-btn.create {
+  background: #1976d2;
+  color: #fff;
+}
+.dialog-btn.create:disabled {
+  background: #bcd;
+  color: #fff;
+  cursor: not-allowed;
+}
+.dialog-btn.cancel {
+  background: #eee;
+  color: #1976d2;
+}
+.dialog-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.dialog-close:hover {
+  background: #f0f0f0;
+}

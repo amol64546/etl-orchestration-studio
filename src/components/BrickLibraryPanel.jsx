@@ -8,6 +8,7 @@ export default function BrickLibraryPanel({ bricks, onRefresh }) {
   const [editBrick, setEditBrick] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedBrickId, setSelectedBrickId] = useState(null);
 
   const handleAdd = () => {
     setShowConfig(false); // Close any open panel first
@@ -79,8 +80,12 @@ export default function BrickLibraryPanel({ bricks, onRefresh }) {
           <div
             className="brick-thumbnail"
             key={brick.id}
+            style={selectedBrickId === brick.id ? { boxShadow: '0 4px 16px rgba(25,118,210,0.12)', border: '2px solid #1976d2' } : {}}
             onClick={e => {
-              // Prevent click if delete icon is clicked
+              if (e.target.closest('.brick-delete-icon')) return;
+              setSelectedBrickId(brick.id);
+            }}
+            onDoubleClick={e => {
               if (e.target.closest('.brick-delete-icon')) return;
               handleEdit(brick);
             }}
