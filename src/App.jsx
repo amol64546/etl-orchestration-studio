@@ -115,7 +115,7 @@ function App() {
             <button
               onClick={() => { setActiveTab('jobs'); setSidebarOpen(false); }}
               style={{ background: activeTab === 'jobs' ? '#1976d2' : 'none', color: activeTab === 'jobs' ? '#fff' : '#222', border: 'none', borderRadius: 6, padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 15, cursor: 'pointer', marginBottom: 2 }}
-            >📊 Job Manager</button>
+            >📊 Job Monitor</button>
           </nav>
         )}
       </div>
@@ -197,11 +197,11 @@ function App() {
             }}
           />
         </div>
-        {/* Job Manager tab */}
+        {/* Job Monitor tab */}
         <div style={{ display: activeTab === 'jobs' ? 'block' : 'none', height: '100%' }}>
           <iframe
             src="http://localhost:8080"
-            title="Job Manager"
+            title="Job Monitor"
             style={{ width: '100%', height: '80vh', border: 'none' }}
             allowFullScreen
           />

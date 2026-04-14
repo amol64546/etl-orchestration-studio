@@ -13,3 +13,5 @@ mapping of jobid with pipelineid
 error messge in error window on execute
 
 new instance of connector in pipelinea
+
+job monitor ui
