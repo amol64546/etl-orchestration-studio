@@ -1,16 +1,16 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: 'https://seatunnel-orchestrator-1-0-0.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-export const fetchBricks = () => api.get('/bricks').then(res => res.data.content || []);
-export const createBrick = (data) => api.post('/bricks', data).then(res => res.data);
-export const updateBrick = (id, data) => api.put(`/bricks/${id}`, data).then(res => res.data);
-export const deleteBrick = (id) => api.delete(`/bricks/${id}`).then(res => res.data);
+export const fetchBricks = () => api.get('/connectors').then(res => res.data.content || []);
+export const createBrick = (data) => api.post('/connectors', data).then(res => res.data);
+export const updateBrick = (id, data) => api.put(`/connectors/${id}`, data).then(res => res.data);
+export const deleteBrick = (id) => api.delete(`/connectors/${id}`).then(res => res.data);
 
 export const fetchPipelines = () => api.get('/pipelines').then(res => res.data.content || []);
 export const createPipeline = (data) => api.post('/pipelines', data).then(res => res.data);

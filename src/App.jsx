@@ -200,7 +200,7 @@ function App() {
         {/* Job Monitor tab */}
         <div style={{ display: activeTab === 'jobs' ? 'block' : 'none', height: '100%' }}>
           <iframe
-            src="http://localhost:8080"
+            src="https://seatunnel-2-3-12.onrender.com/"
             title="Job Monitor"
             style={{ width: '100%', height: '80vh', border: 'none' }}
             allowFullScreen

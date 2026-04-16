@@ -1,9 +1,9 @@
 {
-  "name": "etl-orchestration-ui",
+  "name": "etl-orchestration-studio",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "homepage": "https://amol64546.github.io/portfolio",
+  "homepage": "https://amol64546.github.io/etl-orchestration-studio",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
