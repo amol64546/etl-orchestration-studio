@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - gh-pages
+      - main
 
 jobs:
   deploy:
@@ -26,8 +26,8 @@ jobs:
 
       - name: Configure Git user
         run: |
-          git config --global user.name "${{ vars.GIT_USERNAME }}"
-          git config --global user.email "${{ vars.GIT_EMAIL }}"
+          git config --global user.name "amol64546"
+          git config --global user.email "amol64546@gmail.com"
 
       - name: Deploy to GitHub Pages
         env:
