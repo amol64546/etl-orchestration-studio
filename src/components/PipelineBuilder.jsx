@@ -10,7 +10,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import '../styles/flowNodes.css';
-import { createPipeline, getPipelineById, executePipelineWithEnv, deletePipeline } from '../api/client';
+import { createPipeline, getPipelineById, executePipelineWithEnv, deletePipeline, fetchBricks, fetchBrickById } from '../api/client';
 import EnvConfigPanelUI from './EnvConfigPanelUI';
 
 const defaultEnvConfig = {
@@ -78,6 +78,20 @@ const nodeTypes = {
 };
 
 export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks, selectedPipelineId, onPipelineSaved, onSelectPipeline }) {
+  // Local state for bricks for connectors tab (size 1000)
+  const [bigBricks, setBigBricks] = useState([]);
+  const [bigBricksLoaded, setBigBricksLoaded] = useState(false);
+    // Fetch bricks with size 1000 for connectors tab
+    const fetchBigBricks = async () => {
+      try {
+        const data = await fetchBricks(1, 1000);
+        setBigBricks(data.content || []);
+        setBigBricksLoaded(true);
+      } catch (err) {
+        setBigBricks([]);
+        setBigBricksLoaded(false);
+      }
+    };
   // Track selected elements for deletion
   const [selectedElements, setSelectedElements] = useState({ nodes: [], edges: [] });
 
@@ -170,6 +184,13 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     setRightTab('bricks');
   }, []);
 
+  // On first load of connectors tab in Pipeline Builder, fetch bricks size 1000
+  useEffect(() => {
+    if (rightTab === 'bricks' && !bigBricksLoaded) {
+      fetchBigBricks();
+    }
+  }, [rightTab, bigBricksLoaded]);
+
   const loadPipeline = async (id) => {
     try {
       const pipeline = await getPipelineById(id);
@@ -233,7 +254,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     event.dataTransfer.dropEffect = 'copy';
   }, []);
 
-  const onDrop = useCallback((event) => {
+  const onDrop = useCallback(async (event) => {
     event.preventDefault();
     const rawData = event.dataTransfer.getData('application/json');
     if (!rawData) return;
@@ -243,23 +264,36 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     let type = 'transform';
     if (brick.pluginType && brick.pluginType.toLowerCase().includes('source')) type = 'source';
     else if (brick.pluginType && brick.pluginType.toLowerCase().includes('sink')) type = 'sink';
+
+    // Fetch full brick details
+    let brickDetails = brick;
+    try {
+      brickDetails = await fetchBrickById(brick.id);
+    } catch (e) {
+      // fallback to minimal brick if fetch fails
+    }
+
     const newNode = {
       id: newNodeId,
       type,
       position,
       data: {
-        label: brick.name,
-        connectorType: brick.pluginType,
-        configOverrides: { ...brick.config },
-        brickId: brick.id,
-        originalConfig: brick.config,
+        label: brickDetails.name,
+        connectorType: brickDetails.pluginType,
+        configOverrides: { ...brickDetails.config },
+        brickId: brickDetails.id,
+        originalConfig: brickDetails.config,
       }
     };
     setNodes((nds) => nds.concat(newNode));
   }, []);
 
-  // Only open config panel on double click
-  const onNodeClick = () => { };
+  // On connector node click, fetch bricks size 1000
+  const onNodeClick = useCallback(() => {
+    if (!bigBricksLoaded) {
+      fetchBigBricks();
+    }
+  }, [bigBricksLoaded]);
   const onNodeDoubleClick = (_, node) => {
     setSelectedNode(node);
     setConfigPanelNode(node);
@@ -665,10 +699,17 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
           </div>
 
           {rightTab === 'bricks' && (
-            <div className="flex-1 overflow-y-auto min-w-[200px]">
+            <div
+              className="flex-1 min-w-[200px]"
+              style={{
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                minWidth: 200,
+              }}
+            >
               <div className="grid grid-cols-2 gap-2">
-                {bricks && bricks.length > 0 ? (
-                  bricks.map(brick => {
+                {bigBricks && bigBricks.length > 0 ? (
+                  bigBricks.map(brick => {
                     let bg = 'bg-amber-50';
                     let border = 'border-amber-400';
                     if (brick.pluginType && brick.pluginType.toLowerCase().includes('source')) {
