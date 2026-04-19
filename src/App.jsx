@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BrickLibraryPanel from './components/BrickLibraryPanel';
 import JobMonitor from './components/JobMonitor';
+import JobDetails from './components/JobDetails';
 import PipelineBuilder from './components/PipelineBuilder';
 import PipelineLibrary from './components/PipelineLibrary';
 import { fetchPipelines, fetchBricks, createPipeline, deletePipeline } from './api/client';
@@ -27,6 +28,8 @@ function App() {
   const [selectedPipelineId, setSelectedPipelineId] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   // PipelineBuilder state lifted up
+  // Job details state
+  const [jobDetailsId, setJobDetailsId] = useState(null);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [pipelineName, setPipelineName] = useState('Untitled Pipeline');
@@ -155,6 +158,11 @@ function App() {
             configFields={configFields} setConfigFields={setConfigFields}
             pipelineToDelete={pipelineToDelete} setPipelineToDelete={setPipelineToDelete}
             showDeleteConfirm={showDeleteConfirm} setShowDeleteConfirm={setShowDeleteConfirm}
+            // New: handler to show job details
+            onShowJobDetails={jobId => {
+              setJobDetailsId(jobId);
+              setActiveTab('jobs');
+            }}
           />
         </div>
         {/* Pipeline Library tab */}
@@ -216,12 +224,15 @@ function App() {
           />
         </div>
         {/* Job Monitor tab */}
-        <div style={{ display: activeTab === 'jobs' ? 'block' : 'none', height: '100%' }}>
-          {/* Local JobMonitor UI */}
+        <div style={{ display: activeTab === 'jobs' && !jobDetailsId ? 'block' : 'none', height: '100%' }}>
           <React.Suspense fallback={<div>Loading Job Monitor...</div>}>
-            <JobMonitor />
+            <JobMonitor onJobDetails={id => setJobDetailsId(id)} />
           </React.Suspense>
         </div>
+        {/* Job Details full screen */}
+        {activeTab === 'jobs' && jobDetailsId && (
+          <JobDetails jobId={jobDetailsId} onBack={() => setJobDetailsId(null)} />
+        )}
       </div>
     </div>
   );

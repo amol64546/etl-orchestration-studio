@@ -1,15 +1,20 @@
+
+
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchJobsByStatus, fetchJobsOverview, stopJob, fetchJobById } from '../api/client';
+import { fetchJobsByStatus, fetchJobsOverview, stopJob } from '../api/client';
+import Toast from './Toast';
 
-
-export default function JobMonitor() {
+// Accept onJobDetails as prop
+export default function JobMonitor({ onJobDetails }) {
   const [jobs, setJobs] = useState([]);
   const [overview, setOverview] = useState({});
-  const [selectedJob, setSelectedJob] = useState(null);
   const [streamStatus, setStreamStatus] = useState('');
   const eventSourceRef = useRef(null);
   const [streamingJobId, setStreamingJobId] = useState(null);
   const [jobStatusFilter, setJobStatusFilter] = useState('RUNNING');
+  const [error, setError] = useState(null);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const loadData = async (status = jobStatusFilter) => {
     try {
@@ -64,21 +69,47 @@ export default function JobMonitor() {
 
   const handleStopJob = async (jobId, withSavePoint = false) => {
     if (window.confirm(`Stop job ${jobId}?`)) {
-      await stopJob(jobId, withSavePoint);
-      alert('Stop request sent');
-      loadData();
-      if (streamingJobId === jobId) stopStream();
+      try {
+        await stopJob(jobId, withSavePoint);
+        setToastMessage('Stop request sent');
+        setToastOpen(true);
+        loadData();
+        if (streamingJobId === jobId) stopStream();
+      } catch (err) {
+        setError(err?.message || 'Failed to stop job');
+      }
     }
   };
 
-  const viewJobDetails = async (jobId) => {
-    const details = await fetchJobById(jobId);
-    setSelectedJob(details);
+
+  const viewJobDetails = (jobId) => {
+    if (onJobDetails) onJobDetails(jobId);
   };
 
 
   return (
     <div className="space-y-6">
+      <Toast open={toastOpen} message={toastMessage} onClose={() => setToastOpen(false)} />
+      {/* Error Modal */}
+      {error && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: '#fff',
+          border: '1px solid #e53935',
+          color: '#e53935',
+          borderRadius: 8,
+          padding: '24px 32px',
+          zIndex: 200,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.12)'
+        }}>
+          <div style={{ marginBottom: 8, fontWeight: 600 }}>Error</div>
+          <div>{error}</div>
+          <button onClick={() => setError(null)} style={{ marginTop: 18, color: '#fff', background: '#e53935', border: 'none', borderRadius: 4, padding: '6px 22px', cursor: 'pointer', fontSize: 16 }}>Close</button>
+        </div>
+      )}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-xl shadow p-4 text-center cursor-pointer" onClick={() => setJobStatusFilter('RUNNING')}>
           <div className="text-2xl font-bold text-green-600">{overview.runningJobs || 0}</div>
@@ -110,9 +141,10 @@ export default function JobMonitor() {
                   <div className="text-xs text-gray-400">Created: {job.createTime}</div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => startStream(job.jobId)} className="bg-purple-100 text-purple-700 px-3 py-1 rounded text-sm">📡 Stream Status</button>
                   <button onClick={() => viewJobDetails(job.jobId)} className="bg-gray-100 px-3 py-1 rounded text-sm">Details</button>
-                  <button onClick={() => handleStopJob(job.jobId)} className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm">⏹️ Stop</button>
+                  {!(job.jobStatus === 'FINISHED' || job.jobStatus === 'CANCELLED' || job.jobStatus === 'FAILED' || job.jobStatus === 'CANCELED') && (
+                    <button onClick={() => handleStopJob(job.jobId)} className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm">⏹️ Stop</button>
+                  )}
                 </div>
               </div>
             ))}
@@ -129,17 +161,7 @@ export default function JobMonitor() {
           </div>
         )}
 
-        {selectedJob && (
-          <div className="mt-5 p-4 bg-gray-50 rounded-lg border">
-            <div className="flex justify-between">
-              <h3 className="font-bold">Job Details: {selectedJob.jobId}</h3>
-              <button onClick={() => setSelectedJob(null)} className="text-xs">✖ Close</button>
-            </div>
-            <pre className="text-xs overflow-auto max-h-80 mt-2 p-2 bg-gray-900 text-gray-100 rounded">
-              {JSON.stringify(selectedJob, null, 2)}
-            </pre>
-          </div>
-        )}
+        {/* Job details are now shown in a separate screen */}
       </div>
     </div>
   );

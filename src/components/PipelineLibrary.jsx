@@ -55,7 +55,6 @@ export default function PipelineLibrary({
                   <FaTrash />
                 </button>
                 <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#1976d2', marginBottom: 6 }}>{pipeline.name}</div>
-                <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>ID: {pipeline.id}</div>
                 <div style={{ fontSize: 11, color: '#888', marginBottom: 2 }}>
                   <span>Created: {pipeline.createdOn ? pipeline.createdOn : '-'}</span>
                 </div>

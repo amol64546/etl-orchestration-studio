@@ -10,7 +10,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import '../styles/flowNodes.css';
-import { createPipeline, getPipelineById, executePipelineWithEnv, deletePipeline, fetchBricks, fetchBrickById, streamJobStatus } from '../api/client';
+import { createPipeline, getPipelineById, executePipelineWithEnv, deletePipeline, fetchBricks, fetchBrickById, streamJobStatus, stopJob } from '../api/client';
 import EnvConfigPanelUI from './EnvConfigPanelUI';
 
 const defaultEnvConfig = {
@@ -84,7 +84,7 @@ const nodeTypes = {
   sink: SinkNode,
 };
 
-export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks, selectedPipelineId, onPipelineSaved, onSelectPipeline }) {
+export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks, selectedPipelineId, onPipelineSaved, onSelectPipeline, onShowJobDetails }) {
   // Local state for bricks for connectors tab (size 1000)
   const [bigBricks, setBigBricks] = useState([]);
   const [bigBricksLoaded, setBigBricksLoaded] = useState(false);
@@ -97,6 +97,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       } catch (err) {
         setBigBricks([]);
         setBigBricksLoaded(false);
+        showErrorModal(err, 'Failed to fetch bricks');
       }
     };
   // Track selected elements for deletion
@@ -138,7 +139,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setPipelineToDelete(null);
       onPipelineSaved?.();
     } catch (err) {
-      alert('Failed to delete pipeline');
+      showErrorModal(err, 'Failed to delete pipeline');
     }
   };
   const [nodes, setNodes] = useState([]);
@@ -189,6 +190,14 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     // eslint-disable-next-line
   }, [selectedPipelineId]);
 
+  // Update edge animation based on job status
+  useEffect(() => {
+    setEdges(eds => eds.map(edge => ({
+      ...edge,
+      animated: liveJobStatus === 'RUNNING',
+    })));
+  }, [liveJobStatus]);
+
   useEffect(() => {
     setRightTab('bricks');
   }, []);
@@ -209,7 +218,6 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         let type = 'transform';
         if (node.pluginType && node.pluginType.toLowerCase().includes('source')) type = 'source';
         else if (node.pluginType && node.pluginType.toLowerCase().includes('sink')) type = 'sink';
-        // Label should be 'pluginType: name' if name exists, else fallback
         const label = node.pluginType
           ? (node.name ? `${node.pluginType}: ${node.name}` : `${node.pluginType}: ${node.id.slice(-8)}`)
           : (node.name || node.id.slice(-8));
@@ -224,6 +232,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
             configOverrides: node.config || {},
             brickId: node.id,
             label,
+            id: node.id, // Fix: add id to data for config panel
           }
         };
       });
@@ -231,7 +240,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         id: `e-${edge.source}-${edge.target}`,
         source: edge.source,
         target: edge.target,
-        animated: true,
+        animated: false, // default to false, will be toggled by useEffect
         style: { stroke: '#1976d2', strokeWidth: 2 },
         markerEnd: {
           type: MarkerType.ArrowClosed,
@@ -243,7 +252,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setNodes(flowNodes);
       setEdges(flowEdges);
     } catch (err) {
-      console.error('Failed to load pipeline', err);
+      showErrorModal(err, 'Failed to load pipeline');
     }
   };
 
@@ -282,6 +291,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     try {
       brickDetails = await fetchBrickById(brick.id);
     } catch (e) {
+      showErrorModal(e, 'Failed to fetch brick details');
       // fallback to minimal brick if fetch fails
     }
 
@@ -334,10 +344,9 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setShowCreateDialog(true);
       return;
     }
-    // Use the node's id (which is the random id assigned at creation) for pipeline payload and edge references
     const pipelineNodes = nodes.map(node => ({
       id: node.id,
-      connectorId: node.data.brickId,
+      connectorId: node.data.connectorId, // Use the original connectorId
       pluginType: node.data.pluginType,
       config: node.data.configOverrides || {},
     }));
@@ -352,7 +361,6 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     };
     if (currentPipelineId) payload.id = currentPipelineId;
     try {
-      // Always use createPipeline (PUT) for both create and update
       const saved = await createPipeline(payload);
       setCurrentPipelineId(saved.id);
       setErrorModal(null);
@@ -360,22 +368,20 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setToastOpen(true);
       onPipelineSaved?.();
     } catch (err) {
-      console.error(err);
-      setErrorModal(err?.message || 'Failed to save pipeline');
+      showErrorModal(err, 'Failed to save pipeline');
     }
   };
 
   const handleCreatePipeline = async (name) => {
     setPipelineName(name);
     setShowCreateDialog(false);
-    // Now actually save pipeline with the name
     const nodeIdMap = {};
     const pipelineNodes = nodes.map(node => {
       const randomId = Math.random().toString(36).substr(2, 9);
       nodeIdMap[node.id] = randomId;
       return {
         id: randomId,
-        connectorId: node.data.brickId,
+        connectorId: node.data.connectorId, // Use the original connectorId
         pluginType: node.data.pluginType,
         config: node.data.configOverrides || {},
       };
@@ -397,7 +403,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setToastOpen(true);
       onPipelineSaved?.();
     } catch (err) {
-      setErrorModal(err?.message || 'Failed to create pipeline');
+      showErrorModal(err, 'Failed to create pipeline');
     }
   };
 
@@ -512,6 +518,47 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
 
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+
+  // Stop job handler (must be outside JSX)
+  const handleStopJob = async () => {
+    if (!lastJob?.jobId) return;
+    stopJobStatusStream();
+    try {
+      await stopJob(lastJob.jobId);
+      setToastMessage('Stop request sent');
+      setToastOpen(true);
+    } catch (err) {
+      showErrorModal(err, 'Failed to stop job');
+    }
+  };
+
+  // Helper to show error modal
+  const showErrorModal = (err, fallback = 'An error occurred') => {
+    let status = err?.response?.status || err?.status || 'Error';
+    let message = '';
+    let raw = '';
+    if (err?.response?.data) {
+      const data = err.response.data;
+      if (typeof data === 'string') {
+        message = data;
+      } else if (data.errorObject) {
+        message = (data.errorObject.status ? `[${data.errorObject.status}] ` : '') + (data.errorObject.message || JSON.stringify(data.errorObject));
+      } else if (data.message) {
+        message = data.message;
+      } else {
+        message = JSON.stringify(data, null, 2);
+      }
+      raw = JSON.stringify(data, null, 2);
+    } else if (err?.message) {
+      message = err.message;
+      raw = JSON.stringify(err, null, 2);
+    } else {
+      message = fallback;
+      raw = fallback;
+    }
+    setErrorModal({ status, message, raw });
+  };
 
   return (
     <>
@@ -678,24 +725,48 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '100%', position: 'relative', background: '#fff' }}>
           {/* Trigger and Save Pipeline Buttons - top right of left panel */}
           <div style={{ position: 'absolute', top: 12, right: 18, zIndex: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-            {liveJobStatus && (
-              <span style={{
-                marginRight: 10,
-                fontSize: 14,
-                fontWeight: 500,
-                color: liveJobStatus === 'FAILED' ? '#e53935' : liveJobStatus === 'FINISHED' ? '#43a047' : '#1976d2',
-                background: '#f3f3f3',
-                borderRadius: 6,
-                padding: '4px 10px',
-                minWidth: 80,
-                textAlign: 'center',
-                letterSpacing: 1
-              }}>
+            {liveJobStatus && lastJob?.jobId && (
+              <span
+                style={{
+                  marginRight: 10,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: liveJobStatus === 'FAILED' ? '#e53935' : liveJobStatus === 'FINISHED' ? '#43a047' : '#1976d2',
+                  background: '#f3f3f3',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  minWidth: 80,
+                  textAlign: 'center',
+                  letterSpacing: 1,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+                title={lastJob.jobId}
+                onDoubleClick={() => onShowJobDetails && onShowJobDetails(lastJob.jobId)}
+              >
+                {liveJobStatus}
+              </span>
+            )}
+            {liveJobStatus && !lastJob?.jobId && (
+              <span
+                style={{
+                  marginRight: 10,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: liveJobStatus === 'FAILED' ? '#e53935' : liveJobStatus === 'FINISHED' ? '#43a047' : '#1976d2',
+                  background: '#f3f3f3',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  minWidth: 80,
+                  textAlign: 'center',
+                  letterSpacing: 1
+                }}
+              >
                 {liveJobStatus}
               </span>
             )}
             <button
-              onClick={handleExecute}
+              onClick={liveJobStatus === 'RUNNING' ? handleStopJob : handleExecute}
               title={liveJobStatus === 'RUNNING' ? 'Stop Pipeline' : 'Trigger Pipeline'}
               style={{
                 background: liveJobStatus === 'RUNNING' ? '#e53935' : '#43a047',
@@ -704,7 +775,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                 borderRadius: 6,
                 padding: '7px 12px',
                 fontSize: 18,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                boxShadow: '0 2px 8px rgba(54, 33, 33, 0.07)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -859,7 +930,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
             nodeIdMap[node.id] = randomId;
             return {
               id: randomId,
-              connectorId: node.data.brickId,
+              connectorId: node.data.connectorId, // Use the original connectorId
               pluginType: node.data.pluginType,
               config: node.data.configOverrides || {},
             };

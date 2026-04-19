@@ -1,16 +1,16 @@
 ![alt text](image.png)
 https://amol64546.github.io/etl-orchestration-studio/   
 https://seatunnel-orchestrator-1-0-0.onrender.com/swagger-ui/index.html#/
-https://seatunnel-2-3-12.onrender.com/#/overview
+https://seatunnel-2-3-12.onrender.com
 
 # 
-- stream job status
 - stop pipeline
+
 - start and stop job with save point
-- get job
-- edge animation
-- job monitor ui
 - schema field should have nested field selection
-- Authentication
+- button to start with new in pipeline builder
+- save/unsave pipeline status
 - Dark theme
 - search pipeline and connector
+- Authentication
+
