@@ -48,8 +48,8 @@
   flex: 1;
   overflow-y: auto;
   padding: 32px 32px 32px 32px;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 32px;
   background: #fff;
 }
@@ -58,7 +58,8 @@
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  width: 220px;
+  width: 100%;
+  min-width: 0;
   height: 155px;
   padding: 20px 16px 16px 16px;
   display: flex;

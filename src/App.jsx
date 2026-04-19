@@ -18,7 +18,11 @@ function App() {
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bricks, setBricks] = useState([]);
+  const [brickPage, setBrickPage] = useState(1);
+  const [brickTotalPages, setBrickTotalPages] = useState(1);
   const [pipelines, setPipelines] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedPipelineId, setSelectedPipelineId] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   // PipelineBuilder state lifted up
@@ -39,28 +43,32 @@ function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  const loadBricks = async () => {
+  const loadBricks = async (pageNum = brickPage) => {
     try {
-      const data = await fetchBricks();
-      setBricks(data);
+      const data = await fetchBricks(pageNum, 10);
+      setBricks(data.content || []);
+      setBrickTotalPages(data.totalPages || 1);
+      setBrickPage((data.number || 0) + 1);
     } catch (err) {
       console.error('Failed to load bricks', err);
     }
   };
 
-  const loadPipelines = async () => {
+  const loadPipelines = async (pageNum = page) => {
     try {
-      const data = await fetchPipelines();
-      setPipelines(data);
+      const data = await fetchPipelines(pageNum, 10);
+      setPipelines(data.content || []);
+      setTotalPages(data.totalPages || 1);
+      setPage((data.number || 0) + 1);
     } catch (err) {
       console.error('Failed to load pipelines', err);
     }
   };
 
   useEffect(() => {
-    loadBricks();
-    loadPipelines();
-  }, [refreshTrigger]);
+    loadBricks(brickPage);
+    loadPipelines(page);
+  }, [refreshTrigger, page, brickPage]);
 
   // Persist activeTab to localStorage
   useEffect(() => {
@@ -152,6 +160,11 @@ function App() {
         <div style={{ display: activeTab === 'pipelines' ? 'block' : 'none', height: '100%' }}>
           <PipelineLibrary
             pipelines={pipelines}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={newPage => {
+              if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
+            }}
             selectedPipelineId={selectedPipelineId}
             onCreate={() => setShowCreateDialog(true)}
             onSelect={id => setSelectedPipelineId(id)}
@@ -164,7 +177,6 @@ function App() {
               }
             }}
             onDoubleSelect={id => {
-              // Always reload pipeline by resetting selectedPipelineId first
               setSelectedPipelineId(null);
               setTimeout(() => {
                 setSelectedPipelineId(id);
@@ -182,6 +194,11 @@ function App() {
         <div style={{ display: activeTab === 'bricks' ? 'block' : 'none', height: '100%' }}>
           <BrickLibraryPanel
             bricks={bricks}
+            page={brickPage}
+            totalPages={brickTotalPages}
+            onPageChange={newPage => {
+              if (newPage >= 1 && newPage <= brickTotalPages) setBrickPage(newPage);
+            }}
             onRefresh={async (id, action) => {
               if (action === 'delete' && id) {
                 try {

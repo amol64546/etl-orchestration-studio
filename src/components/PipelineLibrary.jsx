@@ -3,7 +3,17 @@ import { FaPlus, FaTrash } from 'react-icons/fa';
 import './BrickLibraryPanel.css';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 
-export default function PipelineLibrary({ pipelines = [], onCreate, onSelect, onDelete, selectedPipelineId, onDoubleSelect }) {
+export default function PipelineLibrary({
+  pipelines = [],
+  onCreate,
+  onSelect,
+  onDelete,
+  selectedPipelineId,
+  onDoubleSelect,
+  page = 1,
+  totalPages = 1,
+  onPageChange
+}) {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [pipelineToDelete, setPipelineToDelete] = React.useState(null);
 
@@ -58,7 +68,21 @@ export default function PipelineLibrary({ pipelines = [], onCreate, onSelect, on
             <div className="text-gray-400 text-sm" style={{ margin: '0 auto' }}>No pipelines available.</div>
           )}
         </div>
-      </div>
+        {/* Pagination controls */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 16, gap: 16 }}>
+          <button
+            onClick={() => onPageChange && onPageChange(page - 1)}
+            disabled={page === 1}
+            style={{ padding: '4px 12px', borderRadius: 4, border: '1px solid #1976d2', background: page === 1 ? '#eee' : '#fff', color: '#1976d2', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+          >Prev</button>
+          <span style={{ fontSize: 14, color: '#1976d2' }}>Page {page} of {totalPages || 1}</span>
+          <button
+            onClick={() => onPageChange && onPageChange(page + 1)}
+            disabled={page === totalPages || totalPages === 0}
+            style={{ padding: '4px 12px', borderRadius: 4, border: '1px solid #1976d2', background: (page === totalPages || totalPages === 0) ? '#eee' : '#fff', color: '#1976d2', cursor: (page === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer' }}
+          >Next</button>
+        </div>
+        </div>
       <ConfirmDeleteDialog
         open={deleteDialogOpen}
         pipelineName={pipelineToDelete?.name}

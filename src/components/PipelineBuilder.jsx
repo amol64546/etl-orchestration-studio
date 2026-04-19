@@ -1,20 +1,28 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { FaSave, FaPlus, FaPlay, FaStop } from 'react-icons/fa';
+import { FaSave, FaPlay, FaStop } from 'react-icons/fa';
 import ReactFlow, {
   addEdge,
   applyNodeChanges,
   applyEdgeChanges,
   Background,
   Controls,
-  Panel,
   MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import '../styles/flowNodes.css';
-import { createPipeline, updatePipeline, getPipelineById, executePipeline, deletePipeline } from '../api/client';
-import axios from 'axios';
-import PipelineLibrary from './PipelineLibrary';
+import { createPipeline, getPipelineById, executePipelineWithEnv, deletePipeline } from '../api/client';
 import EnvConfigPanelUI from './EnvConfigPanelUI';
+
+const defaultEnvConfig = {
+  "job.mode": "BATCH",
+  "parallelism": 1,
+  "job.retry.times": 3,
+  "job.retry.interval.seconds": 3,
+  "checkpoint.interval": 30000,
+  "checkpoint.timeout": 300000,
+  "read_limit.rows_per_second": 400,
+  "read_limit.bytes_per_second": 7000000
+};
 import { Handle, Position } from 'reactflow';
 import ValueEditor from './ValueEditor';
 import CreatePipelineDialog from './CreatePipelineDialog';
@@ -70,48 +78,48 @@ const nodeTypes = {
 };
 
 export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks, selectedPipelineId, onPipelineSaved, onSelectPipeline }) {
-    // Track selected elements for deletion
-    const [selectedElements, setSelectedElements] = useState({ nodes: [], edges: [] });
+  // Track selected elements for deletion
+  const [selectedElements, setSelectedElements] = useState({ nodes: [], edges: [] });
 
-    // Keyboard handler for Delete key
-    useEffect(() => {
-      const handleDeleteKey = (e) => {
-        if (e.key === 'Delete') {
-          if (selectedElements.nodes.length > 0) {
-            setNodes(nds => nds.filter(n => !selectedElements.nodes.includes(n.id)));
-          }
-          if (selectedElements.edges.length > 0) {
-            setEdges(eds => eds.filter(e => !selectedElements.edges.includes(e.id)));
-          }
+  // Keyboard handler for Delete key
+  useEffect(() => {
+    const handleDeleteKey = (e) => {
+      if (e.key === 'Delete') {
+        if (selectedElements.nodes.length > 0) {
+          setNodes(nds => nds.filter(n => !selectedElements.nodes.includes(n.id)));
         }
-      };
-      window.addEventListener('keydown', handleDeleteKey);
-      return () => window.removeEventListener('keydown', handleDeleteKey);
-    }, [selectedElements]);
-    // Selection handler for ReactFlow
-    const onSelectionChange = useCallback(({ nodes, edges }) => {
-      setSelectedElements({
-        nodes: nodes?.map(n => n.id) || [],
-        edges: edges?.map(e => e.id) || [],
-      });
-    }, []);
+        if (selectedElements.edges.length > 0) {
+          setEdges(eds => eds.filter(e => !selectedElements.edges.includes(e.id)));
+        }
+      }
+    };
+    window.addEventListener('keydown', handleDeleteKey);
+    return () => window.removeEventListener('keydown', handleDeleteKey);
+  }, [selectedElements]);
+  // Selection handler for ReactFlow
+  const onSelectionChange = useCallback(({ nodes, edges }) => {
+    setSelectedElements({
+      nodes: nodes?.map(n => n.id) || [],
+      edges: edges?.map(e => e.id) || [],
+    });
+  }, []);
   const [errorModal, setErrorModal] = useState(null);
   const [pipelineToDelete, setPipelineToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [pendingRename, setPendingRename] = useState('');
-    // Delete pipeline handler
-    const handleDeletePipeline = async (id) => {
-      try {
-        await deletePipeline(id);
-        setShowDeleteConfirm(false);
-        setPipelineToDelete(null);
-        onPipelineSaved?.();
-      } catch (err) {
-        alert('Failed to delete pipeline');
-      }
-    };
+  // Delete pipeline handler
+  const handleDeletePipeline = async (id) => {
+    try {
+      await deletePipeline(id);
+      setShowDeleteConfirm(false);
+      setPipelineToDelete(null);
+      onPipelineSaved?.();
+    } catch (err) {
+      alert('Failed to delete pipeline');
+    }
+  };
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [pipelineName, setPipelineName] = useState('Untitled Pipeline');
@@ -122,7 +130,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   const [executing, setExecuting] = useState(false);
   const [lastJob, setLastJob] = useState(null);
   const [rightTab, setRightTab] = useState('create'); // 'create', 'bricks', 'execute'
-  const [envConfig, setEnvConfig] = useState({});
+  const [envConfig, setEnvConfig] = useState(defaultEnvConfig);
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [configPanelNode, setConfigPanelNode] = useState(null);
   const [configFields, setConfigFields] = useState([]);
@@ -133,8 +141,8 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         key,
         valueType: typeof value === 'boolean' ? 'boolean' :
           Array.isArray(value) ? 'array' :
-          typeof value === 'object' ? 'object' :
-          typeof value === 'number' ? 'number' : 'string',
+            typeof value === 'object' ? 'object' :
+              typeof value === 'number' ? 'number' : 'string',
         value
       }));
       setConfigFields(fields);
@@ -251,7 +259,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   }, []);
 
   // Only open config panel on double click
-  const onNodeClick = () => {};
+  const onNodeClick = () => { };
   const onNodeDoubleClick = (_, node) => {
     setSelectedNode(node);
     setConfigPanelNode(node);
@@ -276,14 +284,20 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setShowCreateDialog(true);
       return;
     }
-    const pipelineNodes = nodes.map(node => ({
-      id: node.data.brickId,
-      pluginType: node.data.pluginType,
-      config: node.data.configOverrides || {},
-    }));
+    const nodeIdMap = {};
+    const pipelineNodes = nodes.map(node => {
+      const randomId = Math.random().toString(36).substr(2, 9);
+      nodeIdMap[node.id] = randomId;
+      return {
+        id: randomId,
+        connectorId: node.data.brickId,
+        pluginType: node.data.pluginType,
+        config: node.data.configOverrides || {},
+      };
+    });
     const pipelineEdges = edges.map(edge => ({
-      source: edge.source,
-      target: edge.target,
+      source: nodeIdMap[edge.source] || edge.source,
+      target: nodeIdMap[edge.target] || edge.target,
     }));
     const payload = {
       name: pipelineName,
@@ -309,14 +323,20 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     setPipelineName(name);
     setShowCreateDialog(false);
     // Now actually save pipeline with the name
-    const pipelineNodes = nodes.map(node => ({
-      id: node.data.brickId,
-      pluginType: node.data.pluginType,
-      config: node.data.configOverrides || {},
-    }));
+    const nodeIdMap = {};
+    const pipelineNodes = nodes.map(node => {
+      const randomId = Math.random().toString(36).substr(2, 9);
+      nodeIdMap[node.id] = randomId;
+      return {
+        id: randomId,
+        connectorId: node.data.brickId,
+        pluginType: node.data.pluginType,
+        config: node.data.configOverrides || {},
+      };
+    });
     const pipelineEdges = edges.map(edge => ({
-      source: edge.source,
-      target: edge.target,
+      source: nodeIdMap[edge.source] || edge.source,
+      target: nodeIdMap[edge.target] || edge.target,
     }));
     const payload = {
       name,
@@ -345,13 +365,9 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     try {
       // Use all env config from the Environment tab
       const envBody = envConfig && Object.keys(envConfig).length > 0 ? envConfig : { "job.mode": jobMode };
-      const res = await axios.post(
-        `http://localhost:8081/pipelines/execute/${currentPipelineId}`,
-        envBody,
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      setLastJob(res.data);
-      alert(`Job submitted: ${res.data.jobId || ''} - status: ${res.data.jobStatus || ''}`);
+      const res = await executePipelineWithEnv(currentPipelineId, envBody);
+      setLastJob(res);
+      alert(`Job submitted: ${res.jobId || ''} - status: ${res.jobStatus || ''}`);
     } catch (err) {
       console.error('Pipeline execution error:', err);
       let status = err?.response?.status || err?.status || 'Error';
@@ -543,7 +559,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         </>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1" style={{ height: 'calc(100vh - 48px)' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1" style={{ height: 'calc(100vh - 35px)' }}>
         <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '100%', position: 'relative', background: '#fff' }}>
           {/* Trigger and Save Pipeline Buttons - top right of left panel */}
           <div style={{ position: 'absolute', top: 12, right: 18, zIndex: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -553,7 +569,8 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                 if (!executing) {
                   setExecuting(true);
                   try {
-                    await executePipeline(currentPipelineId, jobMode);
+                    const envBody = envConfig && Object.keys(envConfig).length > 0 ? envConfig : { "job.mode": jobMode };
+                    await executePipelineWithEnv(currentPipelineId, envBody);
                   } catch (err) {
                     setErrorModal(err?.message || 'Failed to trigger pipeline');
                   }
@@ -713,14 +730,20 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
           setShowRenameDialog(false);
           setPipelineName(newName);
           // Save pipeline with new name
-          const pipelineNodes = nodes.map(node => ({
-            id: node.data.brickId,
-            pluginType: node.data.pluginType,
-            config: node.data.configOverrides || {},
-          }));
+          const nodeIdMap = {};
+          const pipelineNodes = nodes.map(node => {
+            const randomId = Math.random().toString(36).substr(2, 9);
+            nodeIdMap[node.id] = randomId;
+            return {
+              id: randomId,
+              connectorId: node.data.brickId,
+              pluginType: node.data.pluginType,
+              config: node.data.configOverrides || {},
+            };
+          });
           const pipelineEdges = edges.map(edge => ({
-            source: edge.source,
-            target: edge.target,
+            source: nodeIdMap[edge.source] || edge.source,
+            target: nodeIdMap[edge.target] || edge.target,
           }));
           const payload = {
             id: currentPipelineId,

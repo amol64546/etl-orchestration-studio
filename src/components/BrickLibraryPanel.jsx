@@ -3,7 +3,7 @@ import { FaPlus, FaTrash } from 'react-icons/fa';
 import BrickManager from './BrickManager';
 import './BrickLibraryPanel.css';
 
-export default function BrickLibraryPanel({ bricks, onRefresh }) {
+export default function BrickLibraryPanel({ bricks, onRefresh, page = 1, totalPages = 1, onPageChange }) {
   const [showConfig, setShowConfig] = useState(false);
   const [editBrick, setEditBrick] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
@@ -114,6 +114,21 @@ export default function BrickLibraryPanel({ bricks, onRefresh }) {
           </div>
         ))}
       </div>
+      {/* Pagination controls */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 16, gap: 16 }}>
+        <button
+          onClick={() => onPageChange && onPageChange(page - 1)}
+          disabled={page === 1}
+          style={{ padding: '4px 12px', borderRadius: 4, border: '1px solid #1976d2', background: page === 1 ? '#eee' : '#fff', color: '#1976d2', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+        >Prev</button>
+        <span style={{ fontSize: 14, color: '#1976d2' }}>Page {page} of {totalPages || 1}</span>
+        <button
+          onClick={() => onPageChange && onPageChange(page + 1)}
+          disabled={page === totalPages || totalPages === 0}
+          style={{ padding: '4px 12px', borderRadius: 4, border: '1px solid #1976d2', background: (page === totalPages || totalPages === 0) ? '#eee' : '#fff', color: '#1976d2', cursor: (page === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer' }}
+        >Next</button>
+      </div>
+
       {showConfig && (
         <div className="brick-panel-modal">
           <div className="brick-panel-modal-content">

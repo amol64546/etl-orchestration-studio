@@ -6,6 +6,38 @@
   body {
     @apply bg-gray-50 text-gray-900;
   }
+    .dark body {
+      @apply bg-gray-900 text-gray-100;
+    }
+    .dark .bg-white {
+      background-color: #23272f !important;
+    }
+    .dark .text-gray-900 {
+      color: #f3f3f3 !important;
+    }
+    .dark .border-gray-200 {
+      border-color: #444 !important;
+    }
+    .dark .shadow {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.32) !important;
+    }
+    .dark .brick-panel-container,
+    .dark .brick-panel-header,
+    .dark .brick-panel-scroll,
+    .dark .brick-thumbnail {
+      background: #23272f !important;
+      color: #f3f3f3 !important;
+    }
+    .dark .brick-panel-title {
+      color: #ffe066 !important;
+    }
+    .dark .brick-panel-plus {
+      background: #ffe066 !important;
+      color: #23272f !important;
+    }
+    .dark .brick-panel-plus:hover {
+      background: #ffd60a !important;
+    }
 }
 
 .react-flow__node-custom {
