@@ -18,6 +18,58 @@
   flex-direction: column;
   align-items: stretch;
 }
+
+body.dark .dialog-box {
+  background: #23272f !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066 !important;
+}
+
+.dialog-title {
+  /* existing styles... */
+}
+body.dark .dialog-title {
+  color: #ffe066 !important;
+}
+
+.dialog-input {
+  /* existing styles... */
+}
+body.dark .dialog-input {
+  background: #31343c !important;
+  color: #ffe066 !important;
+  border-color: #ffe066 !important;
+}
+.dialog-input:focus {
+  border-color: #1976d2;
+}
+body.dark .dialog-input:focus {
+  border-color: #ffe066 !important;
+}
+
+.dialog-btn.create {
+  /* existing styles... */
+}
+body.dark .dialog-btn.create {
+  background: #1976d2 !important;
+  color: #ffe066 !important;
+}
+.dialog-btn.cancel {
+  /* existing styles... */
+}
+body.dark .dialog-btn.cancel {
+  background: #444 !important;
+  color: #ffe066 !important;
+}
+.dialog-close {
+  /* existing styles... */
+}
+body.dark .dialog-close {
+  color: #ffe066 !important;
+}
+body.dark .dialog-close:hover {
+  background: #31343c !important;
+}
 .dialog-title {
   font-size: 1.2rem;
   font-weight: 600;

@@ -418,7 +418,11 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
 
   const handleExecute = async () => {
     if (!currentPipelineId) {
-      alert('Please save pipeline first');
+      setErrorModal({
+        status: 'Warning',
+        message: 'Please save pipeline first',
+        raw: ''
+      });
       return;
     }
     setExecuting(true);
@@ -564,39 +568,46 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     <>
       {/* Error Modal */}
       {errorModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.18)',
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <div style={{
-            minWidth: 320,
-            maxWidth: 520,
-            background: '#fff',
-            borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-            padding: 32,
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.18)',
+            zIndex: 100,
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            gap: 16,
-            fontSize: 16,
-          }}>
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            className={typeof window !== 'undefined' && document.body.classList.contains('dark') ? 'error-modal-dark' : 'error-modal-light'}
+            style={{
+              minWidth: 320,
+              maxWidth: 520,
+              background: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#23272f' : '#fff',
+              color: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#ffe066' : '#23272f',
+              borderRadius: 12,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              padding: 32,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 16,
+              fontSize: 16,
+              border: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '1.5px solid #ffe066' : 'none',
+            }}
+          >
             <div style={{ color: '#e53935', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>Error</div>
             {typeof errorModal === 'object' && errorModal !== null ? (
               <>
-                <div style={{ color: '#333', textAlign: 'center', marginBottom: 8 }}>
+                <div style={{ color: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#ffe066' : '#333', textAlign: 'center', marginBottom: 8 }}>
                   <div><b>Status:</b> {errorModal.status}</div>
                   <div style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}><b>Message:</b> {errorModal.message}</div>
                   {errorModal.raw && (
-                    <details style={{ marginTop: 12, fontSize: 13, color: '#666', background: '#f7f7f7', borderRadius: 6, padding: 10 }}>
+                    <details style={{ marginTop: 12, fontSize: 13, color: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#ffe066' : '#666', background: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#31343c' : '#f7f7f7', borderRadius: 6, padding: 10 }}>
                       <summary style={{ cursor: 'pointer', fontWeight: 500 }}>Show raw error data</summary>
                       <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>{errorModal.raw}</pre>
                     </details>
@@ -604,11 +615,21 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                 </div>
               </>
             ) : (
-              <div style={{ color: '#333', textAlign: 'center', marginBottom: 8, whiteSpace: 'pre-wrap' }}>{errorModal}</div>
+              <div style={{ color: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#ffe066' : '#333', textAlign: 'center', marginBottom: 8, whiteSpace: 'pre-wrap' }}>{errorModal}</div>
             )}
             <button
               onClick={() => setErrorModal(null)}
-              style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 18px', fontSize: 15, cursor: 'pointer' }}
+              style={{
+                background: '#e53935',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 18px',
+                fontSize: 15,
+                cursor: 'pointer',
+                marginTop: 8,
+                borderColor: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#ffe066' : 'none',
+              }}
             >Close</button>
           </div>
         </div>
@@ -620,10 +641,40 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
           {/* Overlay */}
           <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 49 }} onClick={() => { setShowConfigPanel(false); setConfigPanelNode(null); setSelectedNode(null); }} />
           {/* Centered Modal */}
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: '80vh', maxHeight: 800, background: '#fff', zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', padding: 32, display: 'flex', flexDirection: 'column', overflowY: 'auto', borderRadius: 14 }}>
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 600,
+              height: '80vh',
+              maxHeight: 800,
+              background: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#23272f' : '#fff',
+              color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#23272f',
+              border: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1.5px solid #ffe066' : 'none',
+              zIndex: 50,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              padding: 32,
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto',
+              borderRadius: 14,
+            }}
+          >
             <button
               onClick={() => { setShowConfigPanel(false); setConfigPanelNode(null); setSelectedNode(null); }}
-              style={{ position: 'absolute', top: 16, right: 20, background: 'none', border: 'none', fontSize: 22, color: '#888', cursor: 'pointer', zIndex: 2 }}
+              style={{
+                position: 'absolute',
+                top: 16,
+                right: 20,
+                background: 'none',
+                border: 'none',
+                fontSize: 22,
+                color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#888',
+                cursor: 'pointer',
+                zIndex: 2,
+              }}
               title="Close"
             >×</button>
             <h2 className="text-xl font-semibold mb-4">Edit Connector Config</h2>
@@ -639,9 +690,26 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                 field.key !== 'plugin_name' &&
                 field.key !== 'plugin_input' &&
                 field.key !== 'plugin_output' && (
-                  <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
-                    <span style={{ minWidth: 120, fontWeight: 500, color: '#333' }}>{field.key}</span>
-                    <span style={{ minWidth: 70, color: '#888', fontSize: 13 }}>{field.valueType}</span>
+                  <div
+                    key={field.key}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 16,
+                      padding: '4px 0',
+                      borderBottom: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1px solid #ffe066' : '1px solid #f0f0f0',
+                    }}
+                  >
+                    <span
+                      style={{
+                        minWidth: 120,
+                        fontWeight: 500,
+                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#333',
+                      }}
+                    >
+                      {field.key}
+                    </span>
+                    <span style={{ minWidth: 70, color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#888', fontSize: 13 }}>{field.valueType}</span>
                     <div style={{ flex: 1 }}>
                       <ValueEditor
                         value={field.value}
@@ -657,7 +725,16 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
             </div>
             {/* New field editor */}
             {configFields.some(f => f.key === '__new__') && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, borderBottom: '1px solid #f0f0f0', padding: '4px 0' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 16,
+                  borderBottom: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1px solid #ffe066' : '1px solid #f0f0f0',
+                  padding: '4px 0',
+                }}
+              >
                 <input
                   type="text"
                   placeholder="Key"
@@ -666,7 +743,14 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                     const newKey = e.target.value;
                     setConfigFields(fields => fields.map(f => f.key === '__new__' ? { ...f, newKey } : f));
                   }}
-                  style={{ minWidth: 100, border: '1px solid #ccc', borderRadius: 4, padding: '2px 8px' }}
+                  style={{
+                    minWidth: 100,
+                    border: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1.5px solid #ffe066' : '1px solid #ccc',
+                    borderRadius: 4,
+                    padding: '2px 8px',
+                    background: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#31343c' : '#fff',
+                    color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#23272f',
+                  }}
                 />
                 <select
                   value={configFields.find(f => f.key === '__new__')?.valueType || 'string'}
@@ -674,7 +758,14 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                     const newType = e.target.value;
                     setConfigFields(fields => fields.map(f => f.key === '__new__' ? { ...f, valueType: newType, value: newType === 'boolean' ? true : newType === 'number' ? 0 : '' } : f));
                   }}
-                  style={{ minWidth: 70, border: '1px solid #ccc', borderRadius: 4, padding: '2px 8px' }}
+                  style={{
+                    minWidth: 70,
+                    border: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1.5px solid #ffe066' : '1px solid #ccc',
+                    borderRadius: 4,
+                    padding: '2px 8px',
+                    background: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#31343c' : '#fff',
+                    color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#23272f',
+                  }}
                 >
                   <option value="string">string</option>
                   <option value="number">number</option>
@@ -699,8 +790,17 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                 >×</button>
                 <button
                   type="button"
-                  className="bg-green-500 text-white px-2 py-1 rounded text-xs"
-                  style={{ marginLeft: 4 }}
+                  style={{
+                    marginLeft: 4,
+                    background: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#1976d2' : '#43a047',
+                    color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#fff',
+                    border: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1.5px solid #ffe066' : 'none',
+                    borderRadius: 4,
+                    padding: '2px 8px',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
                   disabled={!(configFields.find(f => f.key === '__new__')?.newKey)}
                   onClick={() => {
                     const newField = configFields.find(f => f.key === '__new__');
@@ -714,8 +814,32 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
               </div>
             )}
             <div className="flex gap-2">
-              <button onClick={updateNodeConfig} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save</button>
-              <button onClick={() => { setShowConfigPanel(false); setConfigPanelNode(null); setSelectedNode(null); }} className="bg-gray-300 px-4 py-2 rounded-md">Cancel</button>
+              <button
+                onClick={updateNodeConfig}
+                style={{
+                  background: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#1976d2' : '#1976d2',
+                  color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#fff',
+                  border: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1.5px solid #ffe066' : 'none',
+                  borderRadius: 6,
+                  padding: '8px 24px',
+                  fontWeight: 500,
+                  fontSize: 16,
+                  cursor: 'pointer',
+                }}
+              >Save</button>
+              <button
+                onClick={() => { setShowConfigPanel(false); setConfigPanelNode(null); setSelectedNode(null); }}
+                style={{
+                  background: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#444' : '#eee',
+                  color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#1976d2',
+                  border: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1.5px solid #ffe066' : 'none',
+                  borderRadius: 6,
+                  padding: '8px 24px',
+                  fontWeight: 500,
+                  fontSize: 16,
+                  cursor: 'pointer',
+                }}
+              >Cancel</button>
             </div>
           </div>
         </>

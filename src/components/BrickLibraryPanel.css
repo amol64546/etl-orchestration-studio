@@ -1,3 +1,71 @@
+/* Action button styling for brick modals (edit/create) */
+.brick-panel-modal-content .brick-action-btn {
+  padding: 8px 24px;
+  border-radius: 6px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: #1976d2;
+  color: #fff;
+  margin-right: 12px;
+  transition: background 0.2s, color 0.2s;
+}
+.brick-panel-modal-content .brick-action-btn:last-child {
+  margin-right: 0;
+}
+.brick-panel-modal-content .brick-action-btn.cancel {
+  background: #eee;
+  color: #1976d2;
+}
+body.dark .brick-panel-modal-content .brick-action-btn {
+  background: #1976d2 !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066 !important;
+}
+body.dark .brick-panel-modal-content .brick-action-btn.cancel {
+  background: #444 !important;
+  color: #ffe066 !important;
+}
+/* Input styling for brick modals (edit/create) */
+.brick-panel-modal-content input[type="text"],
+.brick-panel-modal-content input[type="password"],
+.brick-panel-modal-content input[type="number"],
+.brick-panel-modal-content textarea,
+.brick-panel-modal-content select {
+  background: #fff;
+  color: #23272f;
+  border: 1.5px solid #1976d2;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  margin-bottom: 18px;
+  outline: none;
+  transition: border 0.2s;
+}
+.brick-panel-modal-content input[type="text"]:focus,
+.brick-panel-modal-content input[type="password"]:focus,
+.brick-panel-modal-content input[type="number"]:focus,
+.brick-panel-modal-content textarea:focus,
+.brick-panel-modal-content select:focus {
+  border-color: #1976d2;
+}
+body.dark .brick-panel-modal-content input[type="text"],
+body.dark .brick-panel-modal-content input[type="password"],
+body.dark .brick-panel-modal-content input[type="number"],
+body.dark .brick-panel-modal-content textarea,
+body.dark .brick-panel-modal-content select {
+  background: #31343c !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066 !important;
+}
+body.dark .brick-panel-modal-content input[type="text"]:focus,
+body.dark .brick-panel-modal-content input[type="password"]:focus,
+body.dark .brick-panel-modal-content input[type="number"]:focus,
+body.dark .brick-panel-modal-content textarea:focus,
+body.dark .brick-panel-modal-content select:focus {
+  border-color: #ffe066 !important;
+}
 .brick-panel-container {
   position: relative;
   background: #fff;
@@ -14,7 +82,7 @@
   justify-content: space-between;
   padding: 24px 32px 12px 32px;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   z-index: 2;
 }
 
@@ -36,7 +104,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: background 0.2s;
 }
 
@@ -57,7 +125,7 @@
 .brick-thumbnail {
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   width: 100%;
   min-width: 0;
   height: 155px;
@@ -71,7 +139,7 @@
 }
 
 .brick-thumbnail:hover {
-  box-shadow: 0 4px 16px rgba(25,118,210,0.12);
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.12);
 }
 
 .brick-delete-icon {
@@ -87,7 +155,7 @@
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   cursor: pointer;
   z-index: 2;
   border: none;
@@ -106,10 +174,12 @@
   top: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.18);
+  background: rgba(0, 0, 0, 0.18);
   display: flex;
-  align-items: center; /* Center vertically */
-  justify-content: center; /* Center horizontally */
+  align-items: center;
+  /* Center vertically */
+  justify-content: center;
+  /* Center horizontally */
   z-index: 1000;
 }
 
@@ -122,10 +192,15 @@
   max-height: 90vh;
   height: auto;
   overflow-y: auto;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
   position: relative;
   display: flex;
   flex-direction: column;
+}
+body.dark .brick-panel-modal-content {
+  background: #23272f !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066 !important;
 }
 
 @media (max-width: 600px) {
@@ -149,13 +224,33 @@
   margin: 0;
   z-index: 10;
 }
+body.dark .brick-panel-close {
+  color: #ffe066 !important;
+}
+body.dark .brick-panel-close:hover {
+  background: #31343c !important;
+}
+
 
 .brick-panel-confirm-content {
   background: #fff;
   padding: 32px 40px;
   border-radius: 10px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
   text-align: center;
+}
+
+.brick-panel-confirm-buttons {
+  margin-top: 24px;
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+}
+
+body.dark .brick-panel-confirm-content {
+  background: #23272f !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066 !important;
 }
 
 /* Centered, small confirm modal */
@@ -171,12 +266,6 @@
   justify-content: center;
 }
 
-.brick-panel-confirm-buttons {
-  margin-top: 24px;
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-}
 
 .brick-panel-confirm-btn {
   padding: 8px 24px;
@@ -190,9 +279,19 @@
   transition: background 0.2s;
 }
 
+body.dark .brick-panel-confirm-btn {
+  background: #d32f2f !important;
+  color: #ffe066 !important;
+}
+
 .brick-panel-confirm-btn.cancel {
   background: #eee;
   color: #333;
+}
+
+body.dark .brick-panel-confirm-btn.cancel {
+  background: #444 !important;
+  color: #ffe066 !important;
 }
 
 .brick-panel-confirm-btn:hover:not(.cancel) {

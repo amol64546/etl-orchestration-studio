@@ -20,6 +20,28 @@
 .source-node { background: #ffcdd2 !important; }
 .transform-node { background: #bbdefb !important; }
 .sink-node { background: #c8e6c9 !important; }
+
+/* Dark theme overrides for flow editor nodes */
+body.dark .source-node {
+  background: #3a2323 !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ff8a80 !important;
+}
+body.dark .transform-node {
+  background: #1e293b !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #90caf9 !important;
+}
+body.dark .sink-node {
+  background: #1b3427 !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #a5d6a7 !important;
+}
+body.dark .source-node.selected,
+body.dark .transform-node.selected,
+body.dark .sink-node.selected {
+  box-shadow: 0 0 0 2px #ffe066, 0 4px 8px rgba(255,224,102,0.15) !important;
+}
 .source-node.selected, .transform-node.selected, .sink-node.selected {
   box-shadow: 0 0 0 2px #555, 0 4px 8px rgba(0,0,0,0.15) !important;
 }

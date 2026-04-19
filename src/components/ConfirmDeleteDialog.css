@@ -18,6 +18,34 @@
   flex-direction: column;
   align-items: stretch;
 }
+
+body.dark .dialog-box {
+  background: #23272f !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066 !important;
+}
+
+.dialog-title {
+  /* existing styles... */
+}
+body.dark .dialog-title {
+  color: #ffe066 !important;
+}
+
+.dialog-btn.create {
+  /* existing styles... */
+}
+body.dark .dialog-btn.create {
+  background: #d32f2f !important;
+  color: #ffe066 !important;
+}
+.dialog-btn.cancel {
+  /* existing styles... */
+}
+body.dark .dialog-btn.cancel {
+  background: #444 !important;
+  color: #ffe066 !important;
+}
 .dialog-title {
   font-size: 1.2rem;
   font-weight: 600;

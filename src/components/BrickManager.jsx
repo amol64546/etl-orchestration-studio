@@ -207,7 +207,15 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
               {configFields.map((field, idx) => (
                 field.key !== '__new__' && (
                   <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
-                    <span style={{ minWidth: 160, fontWeight: 500, color: '#333' }}>{field.key}</span>
+                    <span
+                      style={{
+                        minWidth: 160,
+                        fontWeight: 500,
+                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#333'
+                      }}
+                    >
+                      {field.key}
+                    </span>
                     <span style={{ minWidth: 90, color: '#888', fontSize: 13 }}>{field.valueType}</span>
                     <div style={{ flex: 1 }}>
                       <ValueEditor
@@ -246,7 +254,8 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
             <div style={{ marginTop: 12 }}>
               <button
                 type="button"
-                className="bg-gray-200 px-3 py-1 rounded text-sm"
+                className="brick-action-btn cancel"
+                style={{ fontWeight: 500, color: '#23272f' }}
                 onClick={() => {
                   if (!configFields.some(f => f.key === '__new__')) {
                     setConfigFields(fields => [
@@ -322,10 +331,15 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
           </div>
         )}
         <div className="flex gap-2">
-          <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+          <button type="submit" className="brick-action-btn">
             {editingId ? 'Update Brick' : 'Create Brick'}
           </button>
-          <button type="button" onClick={() => resetForm(true)} className="bg-gray-300 px-4 py-2 rounded-md">Cancel</button>
+          <button
+            type="button"
+            onClick={() => resetForm(true)}
+            className="brick-action-btn cancel"
+            style={{ fontWeight: 500, color: '#23272f' }}
+          >Cancel</button>
         </div>
       </form>
     </div>
