@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchJobsByStatus, fetchJobsOverview, stopJob, fetchJobById } from '../api/client';
 
+
 export default function JobMonitor() {
   const [jobs, setJobs] = useState([]);
   const [overview, setOverview] = useState({});
@@ -8,14 +9,15 @@ export default function JobMonitor() {
   const [streamStatus, setStreamStatus] = useState('');
   const eventSourceRef = useRef(null);
   const [streamingJobId, setStreamingJobId] = useState(null);
+  const [jobStatusFilter, setJobStatusFilter] = useState('RUNNING');
 
-  const loadData = async () => {
+  const loadData = async (status = jobStatusFilter) => {
     try {
-      const [runningJobs, overviewData] = await Promise.all([
-        fetchJobsByStatus('RUNNING'),
+      const [filteredJobs, overviewData] = await Promise.all([
+        fetchJobsByStatus(status),
         fetchJobsOverview()
       ]);
-      setJobs(runningJobs);
+      setJobs(filteredJobs);
       setOverview(overviewData);
     } catch (err) {
       console.error(err);
@@ -23,13 +25,14 @@ export default function JobMonitor() {
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 4000);
+    loadData(jobStatusFilter);
+    const interval = setInterval(() => loadData(jobStatusFilter), 4000);
     return () => {
       clearInterval(interval);
       if (eventSourceRef.current) eventSourceRef.current.close();
     };
-  }, []);
+    // eslint-disable-next-line
+  }, [jobStatusFilter]);
 
   const startStream = (jobId) => {
     if (eventSourceRef.current) eventSourceRef.current.close();
@@ -73,30 +76,31 @@ export default function JobMonitor() {
     setSelectedJob(details);
   };
 
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow p-4 text-center">
+        <div className="bg-white rounded-xl shadow p-4 text-center cursor-pointer" onClick={() => setJobStatusFilter('RUNNING')}>
           <div className="text-2xl font-bold text-green-600">{overview.runningJobs || 0}</div>
           <div className="text-sm text-gray-500">Running</div>
         </div>
-        <div className="bg-white rounded-xl shadow p-4 text-center">
+        <div className="bg-white rounded-xl shadow p-4 text-center cursor-pointer" onClick={() => setJobStatusFilter('FINISHED')}>
           <div className="text-2xl font-bold text-blue-600">{overview.finishedJobs || 0}</div>
           <div className="text-sm text-gray-500">Finished</div>
         </div>
-        <div className="bg-white rounded-xl shadow p-4 text-center">
+        <div className="bg-white rounded-xl shadow p-4 text-center cursor-pointer" onClick={() => setJobStatusFilter('FAILED')}>
           <div className="text-2xl font-bold text-red-600">{overview.failedJobs || 0}</div>
           <div className="text-sm text-gray-500">Failed</div>
         </div>
-        <div className="bg-white rounded-xl shadow p-4 text-center">
+        <div className="bg-white rounded-xl shadow p-4 text-center cursor-pointer" onClick={() => setJobStatusFilter('CANCELED')}>
           <div className="text-2xl font-bold text-gray-600">{overview.cancelledJobs || 0}</div>
           <div className="text-sm text-gray-500">Cancelled</div>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow p-5">
-        <h2 className="text-xl font-semibold mb-3">📡 Running Jobs & Lifecycle</h2>
-        {jobs.length === 0 ? <p className="text-gray-400">No running jobs.</p> : (
+        <h2 className="text-xl font-semibold mb-3">📡 {jobStatusFilter} JOBS</h2>
+        {jobs.length === 0 ? <p className="text-gray-400">No jobs.</p> : (
           <div className="space-y-3">
             {jobs.map(job => (
               <div key={job.jobId} className="border rounded-lg p-3 flex flex-wrap items-center justify-between gap-3">

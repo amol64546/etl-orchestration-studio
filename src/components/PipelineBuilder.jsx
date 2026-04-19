@@ -10,7 +10,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import '../styles/flowNodes.css';
-import { createPipeline, getPipelineById, executePipelineWithEnv, deletePipeline, fetchBricks, fetchBrickById } from '../api/client';
+import { createPipeline, getPipelineById, executePipelineWithEnv, deletePipeline, fetchBricks, fetchBrickById, streamJobStatus } from '../api/client';
 import EnvConfigPanelUI from './EnvConfigPanelUI';
 
 const defaultEnvConfig = {
@@ -49,16 +49,21 @@ const nodeBoxStyle = {
   lineHeight: 1.2,
 };
 
+
 const SourceNode = ({ data, selected }) => (
   <div className={`source-node${selected ? ' selected' : ''}`} style={nodeBoxStyle}>
-    <div style={{ fontSize: 12, fontWeight: 'normal', marginBottom: 2 }}>Source: {data.label || data.connectorType || 'FakeSource'}</div>
+    <div style={{ fontSize: 10, fontWeight: 'normal', marginBottom: 2, lineHeight: 1.15 }}>
+      {`${data.pluginType || ''} : ${data.configOverrides?.plugin_name || ''} : ${data.name || ''}`}
+    </div>
     <Handle type="source" position={Position.Right} />
   </div>
 );
 
 const TransformNode = ({ data, selected }) => (
   <div className={`transform-node${selected ? ' selected' : ''}`} style={nodeBoxStyle}>
-    <div style={{ fontSize: 12, fontWeight: 'normal', marginBottom: 2 }}>Transform: {data.label || data.connectorType || 'Metadata'}</div>
+    <div style={{ fontSize: 10, fontWeight: 'normal', marginBottom: 2, lineHeight: 1.15 }}>
+      {`${data.pluginType || ''} : ${data.configOverrides?.plugin_name || ''} : ${data.name || ''}`}
+    </div>
     <Handle type="target" position={Position.Left} />
     <Handle type="source" position={Position.Right} />
   </div>
@@ -66,7 +71,9 @@ const TransformNode = ({ data, selected }) => (
 
 const SinkNode = ({ data, selected }) => (
   <div className={`sink-node${selected ? ' selected' : ''}`} style={nodeBoxStyle}>
-    <div style={{ fontSize: 12, fontWeight: 'normal', marginBottom: 2 }}>Sink: {data.label || data.connectorType || 'Console'}</div>
+    <div style={{ fontSize: 10, fontWeight: 'normal', marginBottom: 2, lineHeight: 1.15 }}>
+      {`${data.pluginType || ''} : ${data.configOverrides?.plugin_name || ''} : ${data.name || ''}`}
+    </div>
     <Handle type="target" position={Position.Left} />
   </div>
 );
@@ -143,6 +150,8 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   const [jobMode, setJobMode] = useState('BATCH');
   const [executing, setExecuting] = useState(false);
   const [lastJob, setLastJob] = useState(null);
+  const [liveJobStatus, setLiveJobStatus] = useState(null);
+  const jobStatusStreamRef = useRef(null);
   const [rightTab, setRightTab] = useState('create'); // 'create', 'bricks', 'execute'
   const [envConfig, setEnvConfig] = useState(defaultEnvConfig);
   const [showConfigPanel, setShowConfigPanel] = useState(false);
@@ -209,9 +218,12 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
           type,
           position: { x: 100 + idx * 250, y: 200 },
           data: {
-            connectorType: node.name,
+            name: node.name,
+            pluginType: node.pluginType,
+            connectorId: node.connectorId,
             configOverrides: node.config || {},
             brickId: node.id,
+            label,
           }
         };
       });
@@ -260,7 +272,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     if (!rawData) return;
     const brick = JSON.parse(rawData);
     const position = { x: event.clientX - 250, y: event.clientY - 100 };
-    const newNodeId = `${brick.id}_${Date.now()}`;
+    const randomId = Math.random().toString(36).substr(2, 9);
     let type = 'transform';
     if (brick.pluginType && brick.pluginType.toLowerCase().includes('source')) type = 'source';
     else if (brick.pluginType && brick.pluginType.toLowerCase().includes('sink')) type = 'sink';
@@ -274,18 +286,22 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
     }
 
     const newNode = {
-      id: newNodeId,
+      id: randomId,
       type,
       position,
       data: {
-        label: brickDetails.name,
-        connectorType: brickDetails.pluginType,
+        name: brickDetails.name,
+        pluginType: brickDetails.pluginType,
+        connectorId: brickDetails.id,
         configOverrides: { ...brickDetails.config },
         brickId: brickDetails.id,
+        id: randomId, // This is the random id for edge/source/connector reference
+        label: `${brickDetails.pluginType || ''} : ${brickDetails.config?.plugin_name || ''} : ${brickDetails.name || ''}`,
+        // For modal display
         originalConfig: brickDetails.config,
       }
     };
-    setNodes((nds) => nds.concat(newNode));
+    setNodes((nds) => nds.concat(newNode)); 
   }, []);
 
   // On connector node click, fetch bricks size 1000
@@ -318,20 +334,16 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
       setShowCreateDialog(true);
       return;
     }
-    const nodeIdMap = {};
-    const pipelineNodes = nodes.map(node => {
-      const randomId = Math.random().toString(36).substr(2, 9);
-      nodeIdMap[node.id] = randomId;
-      return {
-        id: randomId,
-        connectorId: node.data.brickId,
-        pluginType: node.data.pluginType,
-        config: node.data.configOverrides || {},
-      };
-    });
+    // Use the node's id (which is the random id assigned at creation) for pipeline payload and edge references
+    const pipelineNodes = nodes.map(node => ({
+      id: node.id,
+      connectorId: node.data.brickId,
+      pluginType: node.data.pluginType,
+      config: node.data.configOverrides || {},
+    }));
     const pipelineEdges = edges.map(edge => ({
-      source: nodeIdMap[edge.source] || edge.source,
-      target: nodeIdMap[edge.target] || edge.target,
+      source: edge.source,
+      target: edge.target,
     }));
     const payload = {
       name: pipelineName,
@@ -390,18 +402,83 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   };
 
   // Execute pipeline with environment config
+  const stopJobStatusStream = () => {
+    if (jobStatusStreamRef.current) {
+      jobStatusStreamRef.current.abort();
+      jobStatusStreamRef.current = null;
+    }
+    // Do NOT clear liveJobStatus here; let the UI show the last status (e.g., FINISHED)
+  };
+
   const handleExecute = async () => {
     if (!currentPipelineId) {
       alert('Please save pipeline first');
       return;
     }
     setExecuting(true);
+    // Clear any previous toast before showing a new one
+    setToastOpen(false);
+    setTimeout(() => {
+      setToastMessage('Pipeline is being triggered...');
+      setToastOpen(true);
+    }, 50);
     try {
+      stopJobStatusStream();
       // Use all env config from the Environment tab
       const envBody = envConfig && Object.keys(envConfig).length > 0 ? envConfig : { "job.mode": jobMode };
       const res = await executePipelineWithEnv(currentPipelineId, envBody);
       setLastJob(res);
-      alert(`Job submitted: ${res.jobId || ''} - status: ${res.jobStatus || ''}`);
+      setToastMessage(`Job submitted: ${res.jobId || ''} - status: RUNNING`);
+      setToastOpen(true);
+      // Start streaming job status if jobId is present
+      if (res.jobId) {
+        const controller = new AbortController();
+        jobStatusStreamRef.current = controller;
+        setLiveJobStatus('RUNNING');
+        fetch(`http://localhost:8080/jobs/status/${res.jobId}/stream`, { signal: controller.signal })
+          .then(response => {
+            if (!response.body) return;
+            const reader = response.body.getReader();
+            let buffer = '';
+            let lastStatus = null;
+            function readStream() {
+              return reader.read().then(({ done, value }) => {
+                if (value) {
+                  buffer += new TextDecoder().decode(value);
+                  // Split by newlines and get the last non-empty status
+                  const statuses = buffer.split(/\r?\n/).filter(Boolean);
+                  if (statuses.length > 0) {
+                    let status = statuses[statuses.length - 1];
+                    if (status.startsWith('data:')) status = status.replace(/^data:/, '').trim();
+                    if (status !== lastStatus) {
+                      setLiveJobStatus(status);
+                      lastStatus = status;
+                    }
+                    // Stop streaming if terminal status, but ensure UI updates
+                    if (["FINISHED", "FAILED", "CANCELED", "CANCELLED"].includes(status)) {
+                      setLiveJobStatus(status); // Ensure final status is set
+                      stopJobStatusStream();
+                      return;
+                    }
+                  }
+                }
+                if (done) {
+                  // On stream end, ensure the last status is set
+                  const statuses = buffer.split(/\r?\n/).filter(Boolean);
+                  if (statuses.length > 0) {
+                    let status = statuses[statuses.length - 1];
+                    if (status.startsWith('data:')) status = status.replace(/^data:/, '').trim();
+                    setLiveJobStatus(status);
+                  }
+                  stopJobStatusStream();
+                  return;
+                }
+                return readStream();
+              });
+            }
+            return readStream();
+          });
+      }
     } catch (err) {
       console.error('Pipeline execution error:', err);
       let status = err?.response?.status || err?.status || 'Error';
@@ -503,14 +580,18 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
               title="Close"
             >×</button>
             <h2 className="text-xl font-semibold mb-4">Edit Connector Config</h2>
-            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Name:</b> {configPanelNode.data.label}</div>
-            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Type:</b> {configPanelNode.data.connectorType}</div>
-            <div style={{ fontSize: 14, marginBottom: 8 }}><b>ID:</b> {configPanelNode.data.brickId}</div>
-            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Plugin Name:</b> {configPanelNode.data.configOverrides?.plugin_name || ''}</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Name:</b> {configPanelNode.data.name || ''}</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Connector Type:</b> {configPanelNode.data.pluginType || ''}</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Connector Name:</b> {configPanelNode.data.configOverrides?.plugin_name || ''}</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>ConnectorId:</b> {configPanelNode.data.connectorId || ''}</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}><b>Id:</b> {configPanelNode.data.id || ''}</div>
             <div style={{ fontSize: 14, marginBottom: 8, fontWeight: 500 }}>Config Fields</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {configFields.map((field, idx) => (
-                field.key !== '__new__' && field.key !== 'plugin_name' && (
+                field.key !== '__new__' &&
+                field.key !== 'plugin_name' &&
+                field.key !== 'plugin_input' &&
+                field.key !== 'plugin_output' && (
                   <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
                     <span style={{ minWidth: 120, fontWeight: 500, color: '#333' }}>{field.key}</span>
                     <span style={{ minWidth: 70, color: '#888', fontSize: 13 }}>{field.valueType}</span>
@@ -597,26 +678,27 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         <div className="lg:col-span-3 bg-white rounded-xl shadow overflow-hidden" style={{ height: '100%', position: 'relative', background: '#fff' }}>
           {/* Trigger and Save Pipeline Buttons - top right of left panel */}
           <div style={{ position: 'absolute', top: 12, right: 18, zIndex: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+            {liveJobStatus && (
+              <span style={{
+                marginRight: 10,
+                fontSize: 14,
+                fontWeight: 500,
+                color: liveJobStatus === 'FAILED' ? '#e53935' : liveJobStatus === 'FINISHED' ? '#43a047' : '#1976d2',
+                background: '#f3f3f3',
+                borderRadius: 6,
+                padding: '4px 10px',
+                minWidth: 80,
+                textAlign: 'center',
+                letterSpacing: 1
+              }}>
+                {liveJobStatus}
+              </span>
+            )}
             <button
-              onClick={async () => {
-                if (!currentPipelineId) return;
-                if (!executing) {
-                  setExecuting(true);
-                  try {
-                    const envBody = envConfig && Object.keys(envConfig).length > 0 ? envConfig : { "job.mode": jobMode };
-                    await executePipelineWithEnv(currentPipelineId, envBody);
-                  } catch (err) {
-                    setErrorModal(err?.message || 'Failed to trigger pipeline');
-                  }
-                } else {
-                  // Stop job logic (optional: you may want to track jobId for real stop)
-                  setExecuting(false);
-                  // Optionally call stopJob here if you have jobId
-                }
-              }}
-              title={executing ? 'Stop Pipeline' : 'Trigger Pipeline'}
+              onClick={handleExecute}
+              title={liveJobStatus === 'RUNNING' ? 'Stop Pipeline' : 'Trigger Pipeline'}
               style={{
-                background: executing ? '#e53935' : '#43a047',
+                background: liveJobStatus === 'RUNNING' ? '#e53935' : '#43a047',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 6,
@@ -629,7 +711,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                 gap: 6
               }}
             >
-              {executing ? <FaStop style={{ fontSize: 18 }} /> : <FaPlay style={{ fontSize: 18 }} />}
+              {liveJobStatus === 'RUNNING' ? <FaStop style={{ fontSize: 18 }} /> : <FaPlay style={{ fontSize: 18 }} />}
             </button>
             <button
               onClick={savePipeline}

@@ -1,6 +1,3 @@
-// Fetch connector details from port 8081 for editing pipeline
-
-
 import axios from 'axios';
 
 const api = axios.create({
@@ -10,6 +7,10 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+export const streamJobStatus = (jobId, signal) => {
+  return fetch(`http://localhost:8080/jobs/status/${jobId}/stream`, { signal });
+};
 
 export const fetchBrickById = (id) => {
   return api.get(`/connectors/${id}`).then(res => res.data);
