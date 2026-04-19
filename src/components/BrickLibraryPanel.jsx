@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { fetchBrickById } from '../api/client';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import BrickManager from './BrickManager';
 import './BrickLibraryPanel.css';
@@ -18,12 +19,20 @@ export default function BrickLibraryPanel({ bricks, onRefresh, page = 1, totalPa
     }, 0);
   };
 
-  const handleEdit = (brick) => {
-    setShowConfig(false); // Close any open panel first
-    setTimeout(() => {
-      setEditBrick(brick);
-      setShowConfig(true);
-    }, 0);
+
+  // Open connector details for editing pipeline (double click)
+  const handleEdit = async (brick) => {
+    try {
+      setShowConfig(false);
+      // Fetch full details from backend (port 8081)
+      const details = await fetchBrickById(brick.id);
+      setTimeout(() => {
+        setEditBrick(details);
+        setShowConfig(true);
+      }, 0);
+    } catch (err) {
+      alert('Failed to fetch connector details');
+    }
   };
 
   const handleDelete = (id) => {
@@ -85,9 +94,9 @@ export default function BrickLibraryPanel({ bricks, onRefresh, page = 1, totalPa
               if (e.target.closest('.brick-delete-icon')) return;
               setSelectedBrickId(brick.id);
             }}
-            onDoubleClick={e => {
+            onDoubleClick={async e => {
               if (e.target.closest('.brick-delete-icon')) return;
-              handleEdit(brick);
+              await handleEdit(brick);
             }}
           >
             <button

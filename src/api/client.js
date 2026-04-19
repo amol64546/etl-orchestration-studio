@@ -1,3 +1,5 @@
+// Fetch connector details from port 8081 for editing pipeline
+
 
 import axios from 'axios';
 
@@ -9,6 +11,9 @@ const api = axios.create({
   },
 });
 
+export const fetchBrickById = (id) => {
+  return api.get(`/connectors/${id}`).then(res => res.data);
+};
 export const fetchBricks = (page = 1, size = 10) =>
   api.get(`/connectors?page=${page - 1}&size=${size}`)
     .then(res => res.data);
