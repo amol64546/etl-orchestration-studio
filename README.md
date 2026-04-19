@@ -8,9 +8,10 @@ https://seatunnel-2-3-12.onrender.com
 
 - start and stop job with save point
 - schema field should have nested field selection
+
 - button to start with new in pipeline builder
 - save/unsave pipeline status
-- Dark theme
+
 - search pipeline and connector
 - Authentication
 

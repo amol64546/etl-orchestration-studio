@@ -1,3 +1,62 @@
+/* Sidebar panel and menu for theme support */
+.sidebar-panel {
+  background: #f8fafc;
+  border-right: 1px solid #e0e7ef;
+  min-height: 100vh;
+  position: relative;
+  z-index: 20;
+  transition: background 0.2s, border-color 0.2s;
+}
+body.dark .sidebar-panel {
+  background: #23272f !important;
+  border-right: 1.5px solid #444 !important;
+}
+
+.sidebar-nav {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-btn {
+  background: none;
+  color: #222;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background 0.2s, color 0.2s;
+}
+.sidebar-btn.active {
+  background: #1976d2;
+  color: #fff;
+}
+body.dark .sidebar-btn {
+  color: #ffe066 !important;
+}
+body.dark .sidebar-btn.active {
+  background: #31343c !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066 !important;
+}
+/* Reset button for environment panel */
+
+.env-reset-btn {
+  --env-reset-bg: #f3f3f3;
+  --env-reset-border: #e0e7ef;
+  --env-reset-color: #23272f;
+}
+
+body.dark .env-reset-btn {
+  --env-reset-bg: #31343c;
+  --env-reset-border: #ffe066;
+  --env-reset-color: #ffe066;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,37 +65,85 @@
   body {
     @apply bg-gray-50 text-gray-900;
   }
-    .dark body {
-      @apply bg-gray-900 text-gray-100;
+  body.dark {
+    @apply bg-gray-900 text-gray-100;
+  }
+  body.dark .bg-white {
+    background-color: #23272f !important;
+  }
+  body.dark .text-gray-900 {
+    color: #f3f3f3 !important;
+  }
+  body.dark .border-gray-200 {
+    border-color: #444 !important;
+  }
+  body.dark .shadow {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.32) !important;
+  }
+  body.dark .brick-panel-container,
+  body.dark .brick-panel-header,
+  body.dark .brick-panel-scroll,
+  body.dark .brick-thumbnail {
+    background: #23272f !important;
+    color: #f3f3f3 !important;
+  }
+  body.dark .brick-panel-title {
+    color: #ffe066 !important;
+  }
+  body.dark .brick-panel-plus {
+    background: #ffe066 !important;
+    color: #23272f !important;
+  }
+  body.dark .brick-panel-plus:hover {
+    background: #ffd60a !important;
+  }
+    /* Flow editor background for dark mode */
+    body.dark .react-flow__renderer,
+    body.dark .react-flow__background,
+    body.dark .react-flow__pane,
+    body.dark .react-flow__viewport {
+      background: #23272f !important;
     }
-    .dark .bg-white {
-      background-color: #23272f !important;
-    }
-    .dark .text-gray-900 {
-      color: #f3f3f3 !important;
-    }
-    .dark .border-gray-200 {
-      border-color: #444 !important;
-    }
-    .dark .shadow {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.32) !important;
-    }
-    .dark .brick-panel-container,
-    .dark .brick-panel-header,
-    .dark .brick-panel-scroll,
-    .dark .brick-thumbnail {
+
+    /* React Flow node backgrounds for dark mode */
+    body.dark .react-flow__node-custom,
+    body.dark .react-flow__node-source,
+    body.dark .react-flow__node-sink,
+    body.dark .react-flow__node-transform {
       background: #23272f !important;
       color: #f3f3f3 !important;
+      border-color: #1976d2 !important;
     }
-    .dark .brick-panel-title {
+
+    /* Connector tab thumbnails for dark mode */
+    body.dark .bg-amber-50,
+    body.dark .bg-\[\#ffcdd2\],
+    body.dark .bg-\[\#c8e6c9\],
+    body.dark .bg-\[\#bbdefb\],
+    body.dark .bg-gray-100 {
+      background: #31343c !important;
+      color: #ffe066 !important;
+      border-color: #ffe066 !important;
+    }
+
+    /* Connector tab text for dark mode */
+    body.dark .text-gray-700,
+    body.dark .text-gray-500 {
       color: #ffe066 !important;
     }
-    .dark .brick-panel-plus {
-      background: #ffe066 !important;
-      color: #23272f !important;
+
+    /* Environment tab text for dark mode */
+    body.dark .env-config-item label,
+    body.dark .env-config-item input,
+    body.dark .env-config-item select {
+      color: #ffe066 !important;
+      background: #23272f !important;
+      border-color: #444 !important;
     }
-    .dark .brick-panel-plus:hover {
-      background: #ffd60a !important;
+
+    body.dark .env-config-panel {
+      background: #23272f !important;
+      color: #ffe066 !important;
     }
 }
 

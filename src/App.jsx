@@ -1,4 +1,37 @@
 import React, { useState, useEffect } from 'react';
+// Theme toggler
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    document.body.classList.remove('light', 'dark');
+    document.body.classList.add(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  return (
+    <div style={{ position: 'fixed', bottom: 24, left: 24, zIndex: 9999, pointerEvents: 'auto' }}>
+      <button
+        onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+        style={{
+          background: theme === 'dark' ? '#222' : '#fff',
+          color: theme === 'dark' ? '#fff' : '#222',
+          border: '1.5px solid #bbb',
+          borderRadius: 8,
+          padding: '8px 18px',
+          fontWeight: 600,
+          fontSize: 15,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+        }}
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
+      </button>
+    </div>
+  );
+}
 import BrickLibraryPanel from './components/BrickLibraryPanel';
 import JobMonitor from './components/JobMonitor';
 import JobDetails from './components/JobDetails';
@@ -96,7 +129,7 @@ function App() {
   return (
     <div className="min-h-screen flex flex-row">
       {/* Sidebar */}
-      <div style={{ width: sidebarOpen ? 210 : 56, transition: 'width 0.2s', background: '#f8fafc', borderRight: '1px solid #e0e7ef', minHeight: '100vh', zIndex: 20, position: 'relative' }}>
+      <div className={`sidebar-panel${sidebarOpen ? ' open' : ''}`} style={{ width: sidebarOpen ? 210 : 56, transition: 'width 0.2s', minHeight: '100vh', zIndex: 20, position: 'relative' }}>
         {/* Hamburger button */}
         <button
           onClick={() => setSidebarOpen(open => !open)}
@@ -111,26 +144,27 @@ function App() {
         </button>
         {/* Sidebar labels */}
         {sidebarOpen && (
-          <nav style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <nav className="sidebar-nav">
             <button
+              className={`sidebar-btn${activeTab === 'builder' ? ' active' : ''}`}
               onClick={() => { setActiveTab('builder'); setSidebarOpen(false); }}
-              style={{ background: activeTab === 'builder' ? '#1976d2' : 'none', color: activeTab === 'builder' ? '#fff' : '#222', border: 'none', borderRadius: 6, padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 15, cursor: 'pointer', marginBottom: 2 }}
             >🧩 Pipeline Builder</button>
             <button
+              className={`sidebar-btn${activeTab === 'pipelines' ? ' active' : ''}`}
               onClick={() => { setActiveTab('pipelines'); setSidebarOpen(false); }}
-              style={{ background: activeTab === 'pipelines' ? '#1976d2' : 'none', color: activeTab === 'pipelines' ? '#fff' : '#222', border: 'none', borderRadius: 6, padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 15, cursor: 'pointer', marginBottom: 2 }}
             >🗂️ Pipeline Library</button>
             <button
+              className={`sidebar-btn${activeTab === 'bricks' ? ' active' : ''}`}
               onClick={() => { setActiveTab('bricks'); setSidebarOpen(false); }}
-              style={{ background: activeTab === 'bricks' ? '#1976d2' : 'none', color: activeTab === 'bricks' ? '#fff' : '#222', border: 'none', borderRadius: 6, padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 15, cursor: 'pointer', marginBottom: 2 }}
             >📦 Connector Library</button>
             <button
+              className={`sidebar-btn${activeTab === 'jobs' ? ' active' : ''}`}
               onClick={() => { setActiveTab('jobs'); setSidebarOpen(false); }}
-              style={{ background: activeTab === 'jobs' ? '#1976d2' : 'none', color: activeTab === 'jobs' ? '#fff' : '#222', border: 'none', borderRadius: 6, padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 15, cursor: 'pointer', marginBottom: 2 }}
             >📊 Job Monitor</button>
           </nav>
         )}
       </div>
+        <ThemeToggle />
       {/* Main content */}
       <div className="flex-1 p-4" style={{ minHeight: '100vh' }}>
         {/* Always mount PipelineBuilder, hide with CSS if not active */}

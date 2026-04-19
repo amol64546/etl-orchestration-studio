@@ -160,7 +160,26 @@ const EnvConfigPanelUI = ({ value, onChange, panelStyle = {}, singleColumn = fal
           <button type="button" onClick={handleAddField} style={{ background: '#eee', border: 'none', borderRadius: 4, padding: '4px 12px', marginTop: 4, cursor: 'pointer' }}>Add Configuration Field</button>
         </div> */}
         <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-          <button type="button" onClick={() => setConfig(defaultEnvConfig)} style={{ background: '#f3f3f3', border: 'none', borderRadius: 4, padding: '2px 8px', fontWeight: 500, fontSize: '12px', marginTop: 8 }}>Reset Defaults</button>
+          <button
+            type="button"
+            onClick={() => setConfig(defaultEnvConfig)}
+            className="env-reset-btn"
+            style={{
+              background: 'var(--env-reset-bg, #f3f3f3)',
+              border: '2px solid var(--env-reset-border, #ffe066)',
+              borderRadius: 8,
+              color: 'var(--env-reset-color, #23272f)',
+              padding: '4px 16px',
+              fontWeight: 600,
+              fontSize: '13px',
+              marginTop: 8,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            Reset Defaults
+          </button>
         </div>
       </div>
     </div>
