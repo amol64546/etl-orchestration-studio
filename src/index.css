@@ -1,3 +1,13 @@
+/* Consistent <pre> block for JobDetails dark/light theme */
+.job-details-pre {
+  background: #f3f3f3;
+  color: #23272f;
+}
+body.dark .job-details-pre {
+  background: #23272f !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066;
+}
 /* Sidebar panel and menu for theme support */
 .sidebar-panel {
   background: #f8fafc;
