@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BrickLibraryPanel from './components/BrickLibraryPanel';
+import JobMonitor from './components/JobMonitor';
 import PipelineBuilder from './components/PipelineBuilder';
 import PipelineLibrary from './components/PipelineLibrary';
 import { fetchPipelines, fetchBricks, createPipeline, deletePipeline } from './api/client';
@@ -216,12 +217,10 @@ function App() {
         </div>
         {/* Job Monitor tab */}
         <div style={{ display: activeTab === 'jobs' ? 'block' : 'none', height: '100%' }}>
-          <iframe
-            src="https://seatunnel-2-3-12.onrender.com/"
-            title="Job Monitor"
-            style={{ width: '100%', height: '80vh', border: 'none' }}
-            allowFullScreen
-          />
+          {/* Local JobMonitor UI */}
+          <React.Suspense fallback={<div>Loading Job Monitor...</div>}>
+            <JobMonitor />
+          </React.Suspense>
         </div>
       </div>
     </div>
