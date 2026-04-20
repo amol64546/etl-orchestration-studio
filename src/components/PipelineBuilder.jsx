@@ -451,7 +451,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
         const controller = new AbortController();
         jobStatusStreamRef.current = controller;
         setLiveJobStatus('RUNNING');
-        fetch(`http://localhost:8080/jobs/status/${res.jobId}/stream`, { signal: controller.signal })
+        fetch(`https://seatunnel-orchestrator-1-0-0.onrender.com/jobs/status/${res.jobId}/stream`, { signal: controller.signal })
           .then(response => {
             if (!response.body) return;
             const reader = response.body.getReader();

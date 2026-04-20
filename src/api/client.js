@@ -2,14 +2,14 @@ import axios from 'axios';
 
 const api = axios.create({
   // baseURL: 'https://seatunnel-orchestrator-1-0-0.onrender.com',
-  baseURL: 'http://localhost:8080',
+  baseURL: 'https://seatunnel-orchestrator-1-0-0.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 export const streamJobStatus = (jobId, signal) => {
-  return fetch(`http://localhost:8080/jobs/status/${jobId}/stream`, { signal });
+  return fetch(`https://seatunnel-orchestrator-1-0-0.onrender.com/jobs/status/${jobId}/stream`, { signal });
 };
 
 export const fetchBrickById = (id) => {
