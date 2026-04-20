@@ -1,0 +1,60 @@
+.edit-connector-config-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.edit-connector-config-key {
+  min-width: 120px;
+  font-weight: 500;
+  color: #23272f;
+  transition: color 0.2s;
+}
+.edit-connector-config-type {
+  min-width: 70px;
+  color: #888;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+.edit-connector-modal-btn {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 24px;
+  font-weight: 500;
+  font-size: 16px;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.edit-connector-modal-btn.cancel {
+  background: #eee;
+  color: #1976d2;
+}
+.edit-connector-modal-close {
+  color: #888;
+  transition: color 0.2s;
+}
+body.dark .edit-connector-config-row {
+  border-bottom: 1px solid #ffe066 !important;
+}
+body.dark .edit-connector-config-key {
+  color: #ffe066 !important;
+}
+body.dark .edit-connector-config-type {
+  color: #ffe066 !important;
+}
+body.dark .edit-connector-modal-btn {
+  background: #1976d2 !important;
+  color: #ffe066 !important;
+  border: 1.5px solid #ffe066 !important;
+}
+body.dark .edit-connector-modal-btn.cancel {
+  background: #444 !important;
+  color: #ffe066 !important;
+}
+body.dark .edit-connector-modal-close {
+  color: #ffe066 !important;
+}

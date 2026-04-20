@@ -4,15 +4,5 @@ https://seatunnel-orchestrator-1-0-0.onrender.com/swagger-ui/index.html#/
 https://seatunnel-2-3-12.onrender.com
 
 # Issues
-- stop pipeline
-
-# Features need to be implemented
-- start and stop job with save point
-
-- button to start with new in pipeline builder
-- schema field should have nested field selection
-- save/unsave pipeline status
-
-- search pipeline and connector
-- Authentication
-
+- streaming job status -> edge animation and stop job button change
+- some parts for dark theme

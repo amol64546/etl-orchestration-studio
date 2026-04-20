@@ -25,6 +25,9 @@ const defaultEnvConfig = {
 };
 import { Handle, Position } from 'reactflow';
 import ValueEditor from './ValueEditor';
+import './BrickManager.local.css';
+import './PipelineBuilder.local.css';
+import './PipelineBuilder.theme.css';
 import CreatePipelineDialog from './CreatePipelineDialog';
 import RenamePipelineDialog from './RenamePipelineDialog';
 import Toast from './Toast';
@@ -465,7 +468,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                       lastStatus = status;
                     }
                     // Stop streaming if terminal status, but ensure UI updates
-                    if (["FINISHED", "FAILED", "CANCELED", "CANCELLED"].includes(status)) {
+                    if (["FINISHED", "FAILED", "CANCELED"].includes(status)) {
                       setLiveJobStatus(status); // Ensure final status is set
                       stopJobStatusStream();
                       return;
@@ -642,6 +645,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
           <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 49 }} onClick={() => { setShowConfigPanel(false); setConfigPanelNode(null); setSelectedNode(null); }} />
           {/* Centered Modal */}
           <div
+            className="edit-connector-modal"
             style={{
               position: 'fixed',
               top: '50%',
@@ -650,9 +654,6 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
               width: 600,
               height: '80vh',
               maxHeight: 800,
-              background: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#23272f' : '#fff',
-              color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#23272f',
-              border: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '1.5px solid #ffe066' : 'none',
               zIndex: 50,
               boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
               padding: 32,
@@ -660,6 +661,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
               flexDirection: 'column',
               overflowY: 'auto',
               borderRadius: 14,
+              transition: 'background 0.2s, color 0.2s, border 0.2s',
             }}
           >
             <button
@@ -701,15 +703,24 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                     }}
                   >
                     <span
+                      className="brick-config-key"
                       style={{
                         minWidth: 120,
                         fontWeight: 500,
-                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#333',
+                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#23272f',
+                        transition: 'color 0.2s',
                       }}
                     >
                       {field.key}
                     </span>
-                    <span style={{ minWidth: 70, color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#888', fontSize: 13 }}>{field.valueType}</span>
+                    <span
+                      style={{
+                        minWidth: 70,
+                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#888',
+                        fontSize: 13,
+                        transition: 'color 0.2s',
+                      }}
+                    >{field.valueType}</span>
                     <div style={{ flex: 1 }}>
                       <ValueEditor
                         value={field.value}
@@ -863,12 +874,12 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                   textAlign: 'center',
                   letterSpacing: 1,
                   cursor: 'pointer',
-                  textDecoration: 'underline',
+                  // Removed underline
                 }}
                 title={lastJob.jobId}
                 onDoubleClick={() => onShowJobDetails && onShowJobDetails(lastJob.jobId)}
               >
-                {liveJobStatus}
+                {typeof liveJobStatus === 'string' ? liveJobStatus.replace(/^"|"$/g, '') : liveJobStatus}
               </span>
             )}
             {liveJobStatus && !lastJob?.jobId && (
@@ -886,7 +897,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                   letterSpacing: 1
                 }}
               >
-                {liveJobStatus}
+                {typeof liveJobStatus === 'string' ? liveJobStatus.replace(/^"|"$/g, '') : liveJobStatus}
               </span>
             )}
             <button

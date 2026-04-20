@@ -3,6 +3,7 @@ import { createBrick, updateBrick, deleteBrick } from '../api/client';
 import { SOURCE_PLUGINS, TRANSFORM_PLUGINS, SINK_PLUGINS } from '../constants/plugins';
 import { PLUGIN_TEMPLATES } from '../constants/pluginTemplates';
 import ValueEditor from './ValueEditor';
+import './BrickManager.local.css';
 
 const PLUGIN_TYPES = ['SOURCE', 'TRANSFORM', 'SINK'];
 const PLUGIN_LISTS = {
@@ -208,10 +209,12 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
                 field.key !== '__new__' && (
                   <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
                     <span
+                      className="brick-config-key"
                       style={{
                         minWidth: 160,
                         fontWeight: 500,
-                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#333'
+                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#23272f',
+                        transition: 'color 0.2s',
                       }}
                     >
                       {field.key}

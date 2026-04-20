@@ -1,0 +1,7 @@
+.brick-config-key {
+  color: #23272f;
+  transition: color 0.2s;
+}
+body.dark .brick-config-key {
+  color: #ffe066 !important;
+}

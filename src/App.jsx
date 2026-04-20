@@ -105,6 +105,7 @@ function App() {
   useEffect(() => {
     loadBricks(brickPage);
     loadPipelines(page);
+    // No polling for jobs overview or jobs by status here
   }, [refreshTrigger, page, brickPage]);
 
   // Persist activeTab to localStorage
@@ -257,12 +258,12 @@ function App() {
             }}
           />
         </div>
-        {/* Job Monitor tab */}
-        <div style={{ display: activeTab === 'jobs' && !jobDetailsId ? 'block' : 'none', height: '100%' }}>
+        {/* Job Monitor tab - only mount when active */}
+        {activeTab === 'jobs' && !jobDetailsId && (
           <React.Suspense fallback={<div>Loading Job Monitor...</div>}>
             <JobMonitor onJobDetails={id => setJobDetailsId(id)} />
           </React.Suspense>
-        </div>
+        )}
         {/* Job Details full screen */}
         {activeTab === 'jobs' && jobDetailsId && (
           <JobDetails jobId={jobDetailsId} onBack={() => setJobDetailsId(null)} />

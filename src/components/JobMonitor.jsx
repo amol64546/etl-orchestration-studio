@@ -47,7 +47,7 @@ export default function JobMonitor({ onJobDetails }) {
     setStreamStatus('Connecting...');
     es.onmessage = (event) => {
       setStreamStatus(event.data);
-      if (event.data === 'FINISHED' || event.data === 'CANCELLED' || event.data === 'FAILED') {
+      if (event.data === 'FINISHED' || event.data === 'CANCELED' || event.data === 'FAILED') {
         es.close();
         loadData();
       }
@@ -124,8 +124,8 @@ export default function JobMonitor({ onJobDetails }) {
           <div className="text-sm text-gray-500">Failed</div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 text-center cursor-pointer" onClick={() => setJobStatusFilter('CANCELED')}>
-          <div className="text-2xl font-bold text-gray-600">{overview.cancelledJobs || 0}</div>
-          <div className="text-sm text-gray-500">Cancelled</div>
+          <div className="text-2xl font-bold text-gray-600">{overview.canceledJobs || 0}</div>
+          <div className="text-sm text-gray-500">Canceled</div>
         </div>
       </div>
 
@@ -142,7 +142,7 @@ export default function JobMonitor({ onJobDetails }) {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => viewJobDetails(job.jobId)} className="bg-gray-100 px-3 py-1 rounded text-sm">Details</button>
-                  {!(job.jobStatus === 'FINISHED' || job.jobStatus === 'CANCELLED' || job.jobStatus === 'FAILED' || job.jobStatus === 'CANCELED') && (
+                  {!(job.jobStatus === 'FINISHED' || job.jobStatus === 'CANCELED' || job.jobStatus === 'FAILED' || job.jobStatus === 'CANCELED') && (
                     <button onClick={() => handleStopJob(job.jobId)} className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm">⏹️ Stop</button>
                   )}
                 </div>
