@@ -67,7 +67,7 @@ export default function JobDetails({ jobId, onBack }) {
       {job.envOptions && (
         <div className="mt-6">
           <h3 className="font-bold mb-2">Environment Options</h3>
-          <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto">{JSON.stringify(job.envOptions, null, 2)}</pre>
+          <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto" style={{maxHeight: 260, overflow: 'auto', background: '#fafafa', border: '1px solid #eee', borderRadius: 4}}>{JSON.stringify(job.envOptions, null, 2)}</pre>
         </div>
       )}
 
@@ -77,19 +77,19 @@ export default function JobDetails({ jobId, onBack }) {
           {job.jobInstance.env && (
             <div className="mb-2">
               <b>Env:</b>
-              <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto">{JSON.stringify(job.jobInstance.env, null, 2)}</pre>
+              <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto" style={{maxHeight: 260, overflow: 'auto', background: '#fafafa', border: '1px solid #eee', borderRadius: 4}}>{JSON.stringify(job.jobInstance.env, null, 2)}</pre>
             </div>
           )}
           {job.jobInstance.source && job.jobInstance.source.length > 0 && (
             <div className="mb-2">
               <b>Source:</b>
-              <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto">{JSON.stringify(job.jobInstance.source, null, 2)}</pre>
+              <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto" style={{maxHeight: 260, overflow: 'auto', background: '#fafafa', border: '1px solid #eee', borderRadius: 4}}>{JSON.stringify(job.jobInstance.source, null, 2)}</pre>
             </div>
           )}
           {job.jobInstance.sink && job.jobInstance.sink.length > 0 && (
             <div className="mb-2">
               <b>Sink:</b>
-              <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto">{JSON.stringify(job.jobInstance.sink, null, 2)}</pre>
+              <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto" style={{maxHeight: 260, overflow: 'auto', background: '#fafafa', border: '1px solid #eee', borderRadius: 4}}>{JSON.stringify(job.jobInstance.sink, null, 2)}</pre>
             </div>
           )}
         </div>
@@ -98,7 +98,7 @@ export default function JobDetails({ jobId, onBack }) {
       {job.metrics && (
         <div className="mt-6">
           <h3 className="font-bold mb-2">Metrics</h3>
-          <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto">{JSON.stringify(job.metrics, null, 2)}</pre>
+          <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto" style={{maxHeight: 260, overflow: 'auto', background: '#fafafa', border: '1px solid #eee', borderRadius: 4}}>{JSON.stringify(job.metrics, null, 2)}</pre>
         </div>
       )}
 
@@ -107,15 +107,15 @@ export default function JobDetails({ jobId, onBack }) {
           <h3 className="font-bold mb-2">Job DAG</h3>
           <div className="mb-2">
             <b>Vertex Info Map:</b>
-            <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto">{JSON.stringify(job.jobDag.vertexInfoMap, null, 2)}</pre>
+            <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto" style={{maxHeight: 260, overflow: 'auto', background: '#fafafa', border: '1px solid #eee', borderRadius: 4}}>{JSON.stringify(job.jobDag.vertexInfoMap, null, 2)}</pre>
           </div>
           <div className="mb-2">
             <b>Pipeline Edges:</b>
-            <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto">{JSON.stringify(job.jobDag.pipelineEdges, null, 2)}</pre>
+            <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto" style={{maxHeight: 260, overflow: 'auto', background: '#fafafa', border: '1px solid #eee', borderRadius: 4}}>{JSON.stringify(job.jobDag.pipelineEdges, null, 2)}</pre>
           </div>
           <div className="mb-2">
             <b>Env Options:</b>
-            <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto">{JSON.stringify(job.jobDag.envOptions, null, 2)}</pre>
+            <pre className="job-details-pre rounded p-2 text-xs overflow-x-auto" style={{maxHeight: 260, overflow: 'auto', background: '#fafafa', border: '1px solid #eee', borderRadius: 4}}>{JSON.stringify(job.jobDag.envOptions, null, 2)}</pre>
           </div>
         </div>
       )}

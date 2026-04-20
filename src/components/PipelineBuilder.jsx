@@ -411,10 +411,13 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   };
 
   // Execute pipeline with environment config
-  const stopJobStatusStream = () => {
+  const stopJobStatusStream = (force = false) => {
     if (jobStatusStreamRef.current) {
-      jobStatusStreamRef.current.abort();
-      jobStatusStreamRef.current = null;
+      if (force) {
+        jobStatusStreamRef.current.abort();
+        jobStatusStreamRef.current = null;
+      }
+      // If not force, let the stream finish naturally
     }
     // Do NOT clear liveJobStatus here; let the UI show the last status (e.g., FINISHED)
   };
@@ -454,6 +457,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
             const reader = response.body.getReader();
             let buffer = '';
             let lastStatus = null;
+            let lastTerminalStatus = null;
             function readStream() {
               return reader.read().then(({ done, value }) => {
                 if (value) {
@@ -467,23 +471,23 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                       setLiveJobStatus(status);
                       lastStatus = status;
                     }
-                    // Stop streaming if terminal status, but ensure UI updates
+                    // Only set lastTerminalStatus if a terminal status is seen
                     if (["FINISHED", "FAILED", "CANCELED"].includes(status)) {
+                      lastTerminalStatus = status;
                       setLiveJobStatus(status); // Ensure final status is set
-                      stopJobStatusStream();
+                      stopJobStatusStream(true); // Only abort when terminal status is received
                       return;
                     }
                   }
                 }
                 if (done) {
-                  // On stream end, ensure the last status is set
-                  const statuses = buffer.split(/\r?\n/).filter(Boolean);
-                  if (statuses.length > 0) {
-                    let status = statuses[statuses.length - 1];
-                    if (status.startsWith('data:')) status = status.replace(/^data:/, '').trim();
-                    setLiveJobStatus(status);
+                  // On stream end, only set to terminal if we saw one, else keep as RUNNING
+                  if (lastTerminalStatus) {
+                    setLiveJobStatus(lastTerminalStatus);
+                  } else {
+                    setLiveJobStatus('RUNNING');
                   }
-                  stopJobStatusStream();
+                  stopJobStatusStream(true);
                   return;
                 }
                 return readStream();
@@ -530,7 +534,7 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
   // Stop job handler (must be outside JSX)
   const handleStopJob = async () => {
     if (!lastJob?.jobId) return;
-    stopJobStatusStream();
+    // Do NOT abort the stream here; let it finish when terminal status is received
     try {
       await stopJob(lastJob.jobId);
       setToastMessage('Stop request sent');
@@ -612,7 +616,19 @@ export default function PipelineBuilder({ bricks, pipelines = [], refreshBricks,
                   {errorModal.raw && (
                     <details style={{ marginTop: 12, fontSize: 13, color: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#ffe066' : '#666', background: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#31343c' : '#f7f7f7', borderRadius: 6, padding: 10 }}>
                       <summary style={{ cursor: 'pointer', fontWeight: 500 }}>Show raw error data</summary>
-                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>{errorModal.raw}</pre>
+                      <pre
+                        style={{
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all',
+                          margin: 0,
+                          maxHeight: 260,
+                          overflow: 'auto',
+                          padding: 8,
+                          border: '1px solid #ddd',
+                          borderRadius: 4,
+                          background: (typeof window !== 'undefined' && document.body.classList.contains('dark')) ? '#23272f' : '#fafafa',
+                        }}
+                      >{errorModal.raw}</pre>
                     </details>
                   )}
                 </div>

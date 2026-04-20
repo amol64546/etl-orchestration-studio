@@ -20,23 +20,23 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
     pluginName: '',
     config: {}
   });
-    // Initialize form for editing
-    React.useEffect(() => {
-      if (editBrick) {
-        setFormData({
-          name: editBrick.name,
-          pluginType: editBrick.pluginType,
-          pluginName: editBrick.config?.plugin_name || '',
-          config: editBrick.config || {}
-        });
-        // Removed broken template logic
-        // If you need to restore config field logic, implement it here
-        setEditingId(editBrick.id);
-      } else {
-        resetForm();
-      }
-      // eslint-disable-next-line
-    }, [editBrick]);
+  // Initialize form for editing
+  React.useEffect(() => {
+    if (editBrick) {
+      setFormData({
+        name: editBrick.name,
+        pluginType: editBrick.pluginType,
+        pluginName: editBrick.config?.plugin_name || '',
+        config: editBrick.config || {}
+      });
+      // Removed broken template logic
+      // If you need to restore config field logic, implement it here
+      setEditingId(editBrick.id);
+    } else {
+      resetForm();
+    }
+    // eslint-disable-next-line
+  }, [editBrick]);
   const [editingId, setEditingId] = useState(null);
   const [configFields, setConfigFields] = useState([]);
   const [message, setMessage] = useState('');
@@ -54,8 +54,8 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
       key,
       valueType: typeof value === 'boolean' ? 'boolean' :
         Array.isArray(value) ? 'array' :
-        typeof value === 'object' ? 'object' :
-        typeof value === 'number' ? 'number' : 'string',
+          typeof value === 'object' ? 'object' :
+            typeof value === 'number' ? 'number' : 'string',
       value: formData.config[key] !== undefined ? formData.config[key] : value
     }));
     // Add extra fields from config that are not in the template and not plugin_name
@@ -65,8 +65,8 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
           key,
           valueType: typeof value === 'boolean' ? 'boolean' :
             Array.isArray(value) ? 'array' :
-            typeof value === 'object' ? 'object' :
-            typeof value === 'number' ? 'number' : 'string',
+              typeof value === 'object' ? 'object' :
+                typeof value === 'number' ? 'number' : 'string',
           value
         });
       }
@@ -139,8 +139,8 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
         value,
         valueType: typeof value === 'boolean' ? 'boolean' :
           Array.isArray(value) ? 'array' :
-          typeof value === 'object' ? 'object' :
-          typeof value === 'number' ? 'number' : 'string'
+            typeof value === 'object' ? 'object' :
+              typeof value === 'number' ? 'number' : 'string'
       }));
       setConfigFields(fields);
     }
@@ -213,13 +213,22 @@ export default function BrickManager({ bricks, onRefresh, editBrick, onClose }) 
                       style={{
                         minWidth: 160,
                         fontWeight: 500,
-                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#23272f',
+                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#070707' : '#070808',
                         transition: 'color 0.2s',
                       }}
                     >
                       {field.key}
                     </span>
-                    <span style={{ minWidth: 90, color: '#888', fontSize: 13 }}>{field.valueType}</span>
+                    {/* <span style={{ minWidth: 90, color: '#888', fontSize: 13 }}>{field.valueType}</span> */}
+                    <span
+                      style={{
+                        minWidth: 90,
+                        color: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#ffe066' : '#888',
+                        fontSize: 13
+                      }}
+                    >
+                      {field.valueType}
+                    </span>
                     <div style={{ flex: 1 }}>
                       <ValueEditor
                         value={field.value}

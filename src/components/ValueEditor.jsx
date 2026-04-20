@@ -74,7 +74,12 @@ const ValueEditor = ({ value, onChange, disabled = false }) => {
           value={inputValue}
           onChange={handleValueChange}
           disabled={disabled}
-          style={{ width: 180, border: isValid ? '1px solid #ccc' : '1px solid red' }}
+          style={{
+            width: 180,
+            border: isValid ? '1px solid #ccc' : '1px solid red',
+            background: typeof window !== 'undefined' && document.body.classList.contains('dark') ? '#23272f' : '#fff'
+          }}
+        // style={{ width: 180, border: isValid ? '1px solid #ccc' : '1px solid red' }}
         />
       )}
       {!isValid && <span style={{ color: 'red', marginLeft: 8 }}>Invalid {type}</span>}
