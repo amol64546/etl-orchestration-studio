@@ -134,19 +134,7 @@ export const PLUGIN_TEMPLATES = {
       "table": "TableName"
     },
     "Http": {
-      "url": "https://run.mocky.io/v3/6a1d8ea3-5fc8-4631-972e-af01e66309f6",
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "content_field": "$",
-      "method": "GET",
-      "format": "json",
-      "schema": {
-        "fields": {
-          "name": "string",
-          "age": "int"
-        }
-      }
+      "url": "https://run.mocky.io/v3/6a1d8ea3-5fc8-4631-972e-af01e66309f6"
     },
     "Neo4j": {
       "uri": "bolt://host:7687",
@@ -333,16 +321,6 @@ export const PLUGIN_TEMPLATES = {
           "msg": "string"
         }
       }
-    },
-    "LocalFile": {
-      "schema": {
-        "fields": {
-          "name": "string",
-          "project": "string"
-        }
-      },
-      "path": "/opt/seatunnel/temp/test.json",
-      "file_format_type": "json"
     },
     "Rocketmq": {
       "name.srv.addr": "host:9876",
@@ -730,14 +708,7 @@ export const PLUGIN_TEMPLATES = {
       }
     },
     "Http": {
-      "url": "https://webhook.site/00500252-b3b9-4ecb-99e9-2ba8cbc28d5e",
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    "LocalFile": {
-      "path": "/opt/seatunnel/temp/output",
-      "file_format_type": "json"
+      "url": "https://webhook.site/00500252-b3b9-4ecb-99e9-2ba8cbc28d5e"
     },
     "SftpFile": {
       "host": "host",

@@ -124,7 +124,7 @@ export default function JobMonitor({ onJobDetails }) {
           <div className="text-sm text-gray-500">Failed</div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 text-center cursor-pointer" onClick={() => setJobStatusFilter('CANCELED')}>
-          <div className="text-2xl font-bold text-gray-600">{overview.canceledJobs || 0}</div>
+          <div className="text-2xl font-bold text-gray-600">{overview.cancelledJobs || 0}</div>
           <div className="text-sm text-gray-500">Canceled</div>
         </div>
       </div>
