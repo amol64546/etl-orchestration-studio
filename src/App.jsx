@@ -1,4 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import Login from './components/Login';
+import api from './api/client';
+// Helpers for token storage
+const TOKEN_KEY = 'jwt_token';
+const REFRESH_KEY = 'refresh_token';
+function saveTokens(token, refreshToken) {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(REFRESH_KEY, refreshToken);
+}
+function clearTokens() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+function getRefreshToken() {
+  return localStorage.getItem(REFRESH_KEY);
+}
 // Theme toggler
 function ThemeToggle() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
@@ -42,6 +61,45 @@ import CreatePipelineDialog from './components/CreatePipelineDialog';
 
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
+  const [loginError, setLoginError] = useState(null);
+    // Attach token to all requests
+    useEffect(() => {
+      api.interceptors.request.use(
+        config => {
+          const token = getToken();
+          if (token) config.headers['Authorization'] = `Bearer ${token}`;
+          return config;
+        },
+        error => Promise.reject(error)
+      );
+      return () => {
+        // No cleanup for interceptors for now
+      };
+    }, []);
+    // Login handler
+    const handleLogin = async (username, password) => {
+      setLoginError(null);
+      try {
+        const res = await fetch('http://localhost:8080/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        if (!res.ok) throw new Error('Invalid credentials');
+        const data = await res.json();
+        saveTokens(data.token, data.refreshToken);
+        setIsAuthenticated(true);
+      } catch (err) {
+        setLoginError(err.message || 'Login failed');
+      }
+    };
+
+    // Logout handler
+    const handleLogout = () => {
+      clearTokens();
+      setIsAuthenticated(false);
+    };
   // Read initial tab from localStorage, default to 'builder'
   const getInitialTab = () => {
     try {
@@ -127,9 +185,20 @@ function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} error={loginError} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-row">
       {/* Sidebar */}
+      {/* Logout button */}
+      <button
+        onClick={handleLogout}
+        style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, background: '#fff', color: '#222', border: '1.5px solid #bbb', borderRadius: 8, padding: '8px 18px', fontWeight: 600, fontSize: 15, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}
+      >
+        Logout
+      </button>
       <div className={`sidebar-panel${sidebarOpen ? ' open' : ''}`} style={{ width: sidebarOpen ? 210 : 56, transition: 'width 0.2s', minHeight: '100vh', zIndex: 20, position: 'relative' }}>
         {/* Hamburger button */}
         <button
